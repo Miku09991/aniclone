@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { User, UserPlus, LogIn } from "lucide-react";
+import { User, UserPlus, LogIn, Mail, Lock, AtSign } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 type AuthMode = "login" | "register";
 
@@ -17,6 +19,7 @@ export function AuthForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,31 +33,48 @@ export function AuthForm() {
             description: "Пароли не совпадают",
             variant: "destructive",
           });
+          setIsLoading(false);
           return;
         }
-        // Simulate registration
-        console.log("Регистрация:", { email, username, password });
+        
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              username,
+            },
+          },
+        });
+
+        if (error) throw error;
+
         toast({
           title: "Успешно!",
           description: "Регистрация выполнена успешно",
         });
-        // In a real app, you would call an API here
+
+        navigate("/");
       } else {
-        // Simulate login
-        console.log("Вход:", { email, password });
-        // Mock successful login
-        localStorage.setItem("user", JSON.stringify({ email, username: "Пользователь" }));
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
         toast({
           title: "Успешно!",
           description: "Вход выполнен успешно",
         });
-        window.location.href = "/"; // Redirect to home page
+
+        navigate("/");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Auth error:", error);
       toast({
         title: "Ошибка",
-        description: "Произошла ошибка при авторизации",
+        description: error.message || "Произошла ошибка при авторизации",
         variant: "destructive",
       });
     } finally {
@@ -87,6 +107,8 @@ export function AuthForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  icon={<Mail className="h-4 w-4 text-gray-500" />}
+                  iconPosition="left"
                 />
               </div>
               <div className="space-y-2">
@@ -98,6 +120,8 @@ export function AuthForm() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  icon={<Lock className="h-4 w-4 text-gray-500" />}
+                  iconPosition="left"
                 />
               </div>
             </CardContent>
@@ -128,6 +152,8 @@ export function AuthForm() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  icon={<Mail className="h-4 w-4 text-gray-500" />}
+                  iconPosition="left"
                 />
               </div>
               <div className="space-y-2">
@@ -139,6 +165,8 @@ export function AuthForm() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  icon={<AtSign className="h-4 w-4 text-gray-500" />}
+                  iconPosition="left"
                 />
               </div>
               <div className="space-y-2">
@@ -150,6 +178,8 @@ export function AuthForm() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  icon={<Lock className="h-4 w-4 text-gray-500" />}
+                  iconPosition="left"
                 />
               </div>
               <div className="space-y-2">
@@ -161,6 +191,8 @@ export function AuthForm() {
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  icon={<Lock className="h-4 w-4 text-gray-500" />}
+                  iconPosition="left"
                 />
               </div>
             </CardContent>

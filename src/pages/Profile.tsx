@@ -4,17 +4,26 @@ import { Link, useNavigate } from "react-router-dom";
 import { UserProfile } from "@/components/user/UserProfile";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   
   useEffect(() => {
-    // Check if user is logged in
-    const user = localStorage.getItem("user");
-    if (!user) {
+    // Проверяем, авторизован ли пользователь
+    if (!loading && !user) {
       navigate("/auth");
     }
-  }, [navigate]);
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-white flex justify-center items-center">
+        <div className="w-12 h-12 border-t-4 border-red-500 border-solid rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white">

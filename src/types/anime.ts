@@ -10,4 +10,5 @@ export interface Anime {
   rating?: number;
   newEpisodes?: number;
   status?: string;
+  video_url?: string;
 }

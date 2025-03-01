@@ -1,61 +1,108 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { UserRound, LogOut, Settings, Heart, Clock, List } from "lucide-react";
+import { UserRound, LogOut, Settings, Heart, Clock, List, Upload } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-
-interface User {
-  email: string;
-  username: string;
-  avatar?: string;
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { updateProfile } from "@/lib/supabase";
+import { getFavoriteAnimes, supabase } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { Anime } from "@/types/anime";
+import { Link } from "react-router-dom";
 
 export function UserProfile() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, profile, signOut } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState(profile?.username || "");
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
+  const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // In a real app, fetch user data from an API
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setUsername(parsedUser.username);
-      setEmail(parsedUser.email);
+  // Получаем список избранных аниме
+  const { data: favoriteAnimes = [], isLoading: isLoadingFavorites } = useQuery({
+    queryKey: ['favorites'],
+    queryFn: getFavoriteAnimes,
+    enabled: !!user,
+  });
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
     }
-  }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    toast({
-      title: "Выход выполнен",
-      description: "Вы успешно вышли из аккаунта",
-    });
-    window.location.href = "/";
-  };
+    try {
+      setUploading(true);
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user?.id}/avatar.${fileExt}`;
 
-  const handleSaveProfile = () => {
-    if (user) {
-      const updatedUser = { ...user, username, email };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      setIsEditing(false);
+      // Загружаем файл в хранилище
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Получаем публичную ссылку на файл
+      const { data } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Обновляем аватар в профиле
+      setAvatarUrl(data.publicUrl);
+
       toast({
-        title: "Профиль обновлен",
-        description: "Ваш профиль успешно обновлен",
+        title: "Аватар обновлен",
+        description: "Ваш аватар успешно загружен",
       });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить аватар",
+        variant: "destructive",
+      });
+      console.error("Ошибка загрузки аватара:", error);
+    } finally {
+      setUploading(false);
     }
   };
 
-  if (!user) {
+  const handleSaveProfile = async () => {
+    if (user) {
+      const updates = {
+        username,
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString(),
+      };
+
+      const success = await updateProfile(user.id, updates);
+      
+      if (success) {
+        setIsEditing(false);
+        toast({
+          title: "Профиль обновлен",
+          description: "Ваш профиль успешно обновлен",
+        });
+        // Перезагрузка страницы для обновления данных профиля
+        window.location.reload();
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось обновить профиль",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  if (!user || !profile) {
     return (
       <div className="flex justify-center items-center h-[70vh]">
         <p className="text-white">Пожалуйста, войдите в аккаунт</p>
@@ -70,12 +117,12 @@ export function UserProfile() {
           <Card className="bg-[#1a1a1a] border-[#2a2a2a]">
             <CardHeader>
               <div className="flex flex-col items-center">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-[#2a2a2a] mb-4">
-                  {user.avatar ? (
+                <div className="relative w-32 h-32 rounded-full overflow-hidden bg-[#2a2a2a] mb-4">
+                  {avatarUrl ? (
                     <AspectRatio ratio={1}>
                       <img 
-                        src={user.avatar} 
-                        alt={user.username}
+                        src={avatarUrl} 
+                        alt={profile.username}
                         className="object-cover w-full h-full"
                       />
                     </AspectRatio>
@@ -84,8 +131,27 @@ export function UserProfile() {
                       <UserRound size={64} className="text-gray-400" />
                     </div>
                   )}
+                  
+                  {isEditing && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                      <label 
+                        htmlFor="avatar-upload" 
+                        className="cursor-pointer bg-[#2a2a2a] hover:bg-[#3a3a3a] p-2 rounded-full"
+                      >
+                        <Upload size={24} className="text-white" />
+                        <input 
+                          id="avatar-upload" 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={handleAvatarUpload}
+                          disabled={uploading}
+                        />
+                      </label>
+                    </div>
+                  )}
                 </div>
-                <CardTitle className="text-xl">{user.username}</CardTitle>
+                <CardTitle className="text-xl">{profile.username}</CardTitle>
                 <CardDescription className="text-gray-400">{user.email}</CardDescription>
               </div>
             </CardHeader>
@@ -102,7 +168,7 @@ export function UserProfile() {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start text-red-500 hover:text-red-400 hover:bg-red-950/20"
-                  onClick={handleLogout}
+                  onClick={signOut}
                 >
                   <LogOut size={16} className="mr-2" />
                   Выйти
@@ -145,17 +211,18 @@ export function UserProfile() {
                         <Input
                           id="edit-email"
                           type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="bg-[#2a2a2a] border-[#3a3a3a]"
+                          value={user.email || ""}
+                          disabled
+                          className="bg-[#2a2a2a] border-[#3a3a3a] opacity-60"
                         />
+                        <p className="text-xs text-gray-400">Адрес электронной почты изменить нельзя</p>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="flex justify-between py-2">
                         <span className="text-gray-400">Имя пользователя</span>
-                        <span>{user.username}</span>
+                        <span>{profile.username}</span>
                       </div>
                       <Separator className="bg-[#2a2a2a]" />
                       <div className="flex justify-between py-2">
@@ -205,10 +272,35 @@ export function UserProfile() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <Heart size={64} className="text-gray-400 mb-4" />
-                    <p className="text-gray-400">У вас пока нет избранного аниме</p>
-                  </div>
+                  {isLoadingFavorites ? (
+                    <div className="flex justify-center py-8">
+                      <div className="w-8 h-8 border-t-2 border-red-500 border-solid rounded-full animate-spin"></div>
+                    </div>
+                  ) : favoriteAnimes.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {favoriteAnimes.map((anime: Anime) => (
+                        <Link to={`/anime/${anime.id}`} key={anime.id} className="block">
+                          <div className="bg-[#2a2a2a] rounded-lg overflow-hidden hover:ring-2 hover:ring-red-500 transition-all">
+                            <AspectRatio ratio={2/3}>
+                              <img 
+                                src={anime.image} 
+                                alt={anime.title} 
+                                className="w-full h-full object-cover"
+                              />
+                            </AspectRatio>
+                            <div className="p-3">
+                              <h3 className="text-sm font-medium line-clamp-2">{anime.title}</h3>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12">
+                      <Heart size={64} className="text-gray-400 mb-4" />
+                      <p className="text-gray-400">У вас пока нет избранного аниме</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

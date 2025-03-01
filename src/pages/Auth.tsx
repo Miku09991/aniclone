@@ -4,17 +4,18 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   useEffect(() => {
-    // Check if user is already logged in
-    const user = localStorage.getItem("user");
+    // Проверяем, авторизован ли пользователь
     if (user) {
       navigate("/profile");
     }
-  }, [navigate]);
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white">

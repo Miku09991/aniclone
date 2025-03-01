@@ -1,1 +1,5 @@
+
 project_id = "tkrmpskyskudhvvyhgqd"
+
+[functions.import-anime]
+verify_jwt = false
