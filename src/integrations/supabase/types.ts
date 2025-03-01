@@ -9,13 +9,152 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      animes: {
+        Row: {
+          created_at: string
+          description: string | null
+          episodes: number | null
+          genre: string[] | null
+          id: number
+          image: string | null
+          rating: number | null
+          status: string | null
+          title: string
+          video_url: string | null
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          episodes?: number | null
+          genre?: string[] | null
+          id?: number
+          image?: string | null
+          rating?: number | null
+          status?: string | null
+          title: string
+          video_url?: string | null
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          episodes?: number | null
+          genre?: string[] | null
+          id?: number
+          image?: string | null
+          rating?: number | null
+          status?: string | null
+          title?: string
+          video_url?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          anime_id: number
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          anime_id: number
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          anime_id?: number
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_anime_id_fkey"
+            columns: ["anime_id"]
+            isOneToOne: false
+            referencedRelation: "animes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      gtrgm_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: {
+          "": unknown
+        }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      set_limit: {
+        Args: {
+          "": number
+        }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: {
+          "": string
+        }
+        Returns: string[]
+      }
     }
     Enums: {
       [_ in never]: never

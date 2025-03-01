@@ -106,15 +106,15 @@ export async function searchAnime(query: string) {
 
 // Функция для добавления/удаления аниме из избранного
 export async function toggleFavorite(animeId: number) {
-  const user = supabase.auth.getUser();
-  if (!user) return false;
+  const user = await supabase.auth.getUser();
+  if (!user.data.user) return false;
   
   const { data: existingFavorite } = await supabase
     .from('favorites')
     .select('*')
     .eq('anime_id', animeId)
-    .eq('user_id', (await user).data.user?.id)
-    .single();
+    .eq('user_id', user.data.user.id)
+    .maybeSingle();
   
   if (existingFavorite) {
     // Удаляем из избранного
@@ -130,7 +130,7 @@ export async function toggleFavorite(animeId: number) {
       .from('favorites')
       .insert({
         anime_id: animeId,
-        user_id: (await user).data.user?.id
+        user_id: user.data.user.id
       });
     
     return !error;
@@ -139,33 +139,34 @@ export async function toggleFavorite(animeId: number) {
 
 // Проверка, находится ли аниме в избранном у пользователя
 export async function isFavorite(animeId: number) {
-  const user = supabase.auth.getUser();
-  if (!user) return false;
+  const user = await supabase.auth.getUser();
+  if (!user.data.user) return false;
   
   const { data } = await supabase
     .from('favorites')
     .select('id')
     .eq('anime_id', animeId)
-    .eq('user_id', (await user).data.user?.id)
-    .single();
+    .eq('user_id', user.data.user.id)
+    .maybeSingle();
   
   return !!data;
 }
 
 // Получение избранных аниме пользователя
 export async function getFavoriteAnimes() {
-  const user = supabase.auth.getUser();
-  if (!user) return [];
+  const user = await supabase.auth.getUser();
+  if (!user.data.user) return [];
   
   const { data, error } = await supabase
     .from('favorites')
-    .select('anime_id, animes:animes(*)')
-    .eq('user_id', (await user).data.user?.id);
+    .select('anime_id, animes(*)')
+    .eq('user_id', user.data.user.id);
   
   if (error) {
     console.error('Error fetching favorites:', error);
     return [];
   }
   
-  return data.map(item => item.animes) as Anime[];
+  // Fix for the type error - properly map the data to Anime[]
+  return data.map(item => item.animes as Anime);
 }

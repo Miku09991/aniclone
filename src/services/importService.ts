@@ -1,34 +1,42 @@
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/hooks/use-toast';
 
-export async function importInitialAnimeData() {
+export const importAnimeData = async () => {
   try {
-    // Проверяем, есть ли данные в таблице animes
-    const { count, error: countError } = await supabase
-      .from('animes')
-      .select('*', { count: 'exact', head: true });
-
-    if (countError) {
-      console.error("Ошибка при проверке данных:", countError);
-      return;
-    }
-
-    // Если данные уже есть, не импортируем
-    if (count && count > 0) {
-      console.log("Данные аниме уже импортированы, количество:", count);
-      return;
-    }
-
-    // Вызываем Edge Function для импорта данных
     const { data, error } = await supabase.functions.invoke('import-anime');
-
+    
     if (error) {
-      console.error("Ошибка при импорте данных:", error);
-      return;
+      console.error('Error importing anime data:', error);
+      toast({
+        title: 'Ошибка при импорте данных',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return false;
     }
-
-    console.log("Результат импорта:", data);
-  } catch (error) {
-    console.error("Непредвиденная ошибка при импорте данных:", error);
+    
+    if (data.success) {
+      toast({
+        title: 'Импорт данных успешен',
+        description: data.message,
+      });
+      return true;
+    } else {
+      toast({
+        title: 'Ошибка при импорте данных',
+        description: data.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+  } catch (err) {
+    console.error('Error calling import function:', err);
+    toast({
+      title: 'Ошибка при импорте данных',
+      description: 'Не удалось вызвать функцию импорта',
+      variant: 'destructive',
+    });
+    return false;
   }
-}
+};
