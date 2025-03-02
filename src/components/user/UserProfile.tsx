@@ -188,7 +188,7 @@ export function UserProfile() {
                       </label>
                     </div>}
                 </div>
-                <CardTitle className="text-xl">{profile.username}</CardTitle>
+                <CardTitle className="text-xl text-violet-700">{profile.username}</CardTitle>
                 <CardDescription className="text-gray-400">{user.email}</CardDescription>
               </div>
             </CardHeader>
