@@ -125,7 +125,7 @@ const AnimeDetails = () => {
             </div>
             
             <div className="flex gap-4 mb-4">
-              {anime.video_url && <Button className="flex-1" onClick={() => navigate(`/watch/${anime.id}`)}>
+              {anime.video_url && <Button onClick={() => navigate(`/watch/${anime.id}`)} className="flex-1 rounded-xl">
                   <Play size={16} className="mr-2" />
                   Смотреть
                 </Button>}
