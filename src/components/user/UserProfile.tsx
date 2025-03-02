@@ -376,14 +376,14 @@ export function UserProfile() {
                           
                           <div className="py-4">
                             <Alert className="bg-[#2a2a2a] border-amber-600">
-                              <AlertDescription>
+                              <AlertDescription className="rounded-xl px-[5px] mx-[15px] my-[9px] py-[2px] bg-zinc-50">
                                 Письмо со ссылкой для сброса пароля будет отправлено на адрес {user.email}
                               </AlertDescription>
                             </Alert>
                           </div>
                           
                           <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsResetingPassword(false)}>Отмена</Button>
+                            <Button variant="outline" onClick={() => setIsResetingPassword(false)} className="text-zinc-950">Отмена</Button>
                             <Button onClick={handlePasswordReset}>Отправить инструкции</Button>
                           </DialogFooter>
                         </DialogContent>
