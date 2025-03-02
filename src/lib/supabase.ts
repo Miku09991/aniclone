@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Anime } from '@/types/anime';
 
@@ -21,6 +22,7 @@ export type Favorite = {
   created_at: string;
 };
 
+// User management functions
 export async function getProfile(userId: string) {
   const { data, error } = await supabase
     .from('profiles')
@@ -50,6 +52,23 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
   return true;
 }
 
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback`
+    }
+  });
+  
+  if (error) {
+    console.error('Error signing in with Google:', error);
+    return false;
+  }
+  
+  return true;
+}
+
+// Anime-related functions
 export async function getAnimeById(id: number) {
   const { data, error } = await supabase
     .from('animes')
@@ -98,6 +117,7 @@ export async function searchAnime(query: string) {
   return data as Anime[];
 }
 
+// Favorites management
 export async function toggleFavorite(animeId: number) {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData.user) {
@@ -203,6 +223,7 @@ export async function getAnimesWithVideos(limit = 10) {
   return data as Anime[];
 }
 
+// Data synchronization functions
 export async function syncAnimeDatabase() {
   try {
     const { data, error } = await supabase.functions.invoke('sync-anime');
