@@ -412,7 +412,7 @@ export function UserProfile() {
                               <img src={anime.image} alt={anime.title} className="w-full h-full object-cover" />
                             </AspectRatio>
                             <div className="p-3">
-                              <h3 className="text-sm font-medium line-clamp-2">{anime.title}</h3>
+                              <h3 className="text-sm font-medium line-clamp-2 text-slate-50">{anime.title}</h3>
                             </div>
                           </div>
                         </Link>)}
