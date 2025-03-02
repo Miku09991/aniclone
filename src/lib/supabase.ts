@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Anime } from '@/types/anime';
 
@@ -66,6 +65,82 @@ export async function signInWithGoogle() {
   }
   
   return true;
+}
+
+// Password and email management
+export async function updateUserEmail(newEmail: string) {
+  const { data, error } = await supabase.auth.updateUser({
+    email: newEmail,
+  });
+  
+  if (error) {
+    console.error('Error updating email:', error);
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true, message: 'Проверьте вашу почту для подтверждения изменения email' };
+}
+
+export async function updateUserPassword(password: string) {
+  const { data, error } = await supabase.auth.updateUser({
+    password: password,
+  });
+  
+  if (error) {
+    console.error('Error updating password:', error);
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true, message: 'Пароль успешно обновлен' };
+}
+
+export async function resetPassword(email: string) {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth/reset-password`,
+  });
+  
+  if (error) {
+    console.error('Error resetting password:', error);
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true, message: 'Проверьте вашу почту для сброса пароля' };
+}
+
+export async function uploadAvatar(userId: string, file: File) {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${userId}/avatar.${fileExt}`;
+
+    // Upload the file to the avatars bucket
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    // Get the public URL of the file
+    const { data } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    // Update the user's profile with the new avatar URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: data.publicUrl })
+      .eq('id', userId);
+
+    if (updateError) {
+      throw updateError;
+    }
+
+    return { success: true, avatarUrl: data.publicUrl };
+  } catch (error: any) {
+    console.error('Error uploading avatar:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 // Anime-related functions

@@ -6,14 +6,16 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { UserRound, LogOut, Settings, Heart, Clock, List, Upload } from "lucide-react";
+import { UserRound, LogOut, Settings, Heart, Clock, List, Upload, Mail, Lock, KeyRound } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateProfile } from "@/lib/supabase";
-import { getFavoriteAnimes, supabase } from "@/lib/supabase";
+import { updateProfile, uploadAvatar, updateUserEmail, updateUserPassword, resetPassword } from "@/lib/supabase";
+import { getFavoriteAnimes } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { Anime } from "@/types/anime";
 import { Link } from "react-router-dom";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function UserProfile() {
   const { user, profile, signOut } = useAuth();
@@ -23,6 +25,14 @@ export function UserProfile() {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
+  // State for email and password change
+  const [newEmail, setNewEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isResetingPassword, setIsResetingPassword] = useState(false);
+
   // Получаем список избранных аниме
   const { data: favoriteAnimes = [], isLoading: isLoadingFavorites } = useQuery({
     queryKey: ['favorites'],
@@ -31,38 +41,30 @@ export function UserProfile() {
   });
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0) {
+    if (!event.target.files || event.target.files.length === 0 || !user) {
       return;
     }
 
     try {
       setUploading(true);
       const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user?.id}/avatar.${fileExt}`;
-
-      // Загружаем файл в хранилище
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        throw uploadError;
+      
+      const result = await uploadAvatar(user.id, file);
+      
+      if (result.success) {
+        setAvatarUrl(result.avatarUrl);
+        toast({
+          title: "Аватар обновлен",
+          description: "Ваш аватар успешно загружен",
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: result.error || "Не удалось загрузить аватар",
+          variant: "destructive",
+        });
       }
-
-      // Получаем публичную ссылку на файл
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Обновляем аватар в профиле
-      setAvatarUrl(data.publicUrl);
-
-      toast({
-        title: "Аватар обновлен",
-        description: "Ваш аватар успешно загружен",
-      });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Ошибка",
         description: "Не удалось загрузить аватар",
@@ -78,7 +80,6 @@ export function UserProfile() {
     if (user) {
       const updates = {
         username,
-        avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       };
 
@@ -99,6 +100,76 @@ export function UserProfile() {
           variant: "destructive",
         });
       }
+    }
+  };
+
+  const handleEmailChange = async () => {
+    if (!user?.email) return;
+    
+    const result = await updateUserEmail(newEmail);
+    
+    if (result.success) {
+      toast({
+        title: "Запрос отправлен",
+        description: result.message,
+      });
+      setIsChangingEmail(false);
+      setNewEmail("");
+    } else {
+      toast({
+        title: "Ошибка",
+        description: result.error || "Не удалось обновить email",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (password !== confirmPassword) {
+      toast({
+        title: "Ошибка",
+        description: "Пароли не совпадают",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const result = await updateUserPassword(password);
+    
+    if (result.success) {
+      toast({
+        title: "Пароль обновлен",
+        description: result.message,
+      });
+      setIsChangingPassword(false);
+      setPassword("");
+      setConfirmPassword("");
+    } else {
+      toast({
+        title: "Ошибка",
+        description: result.error || "Не удалось обновить пароль",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!user?.email) return;
+    
+    const result = await resetPassword(user.email);
+    
+    if (result.success) {
+      toast({
+        title: "Запрос отправлен",
+        description: result.message,
+      });
+      setIsResetingPassword(false);
+    } else {
+      toast({
+        title: "Ошибка",
+        description: result.error || "Не удалось отправить запрос на сброс пароля",
+        variant: "destructive",
+      });
     }
   };
 
@@ -182,6 +253,7 @@ export function UserProfile() {
           <Tabs defaultValue="profile">
             <TabsList className="bg-[#1a1a1a]">
               <TabsTrigger value="profile">Профиль</TabsTrigger>
+              <TabsTrigger value="security">Безопасность</TabsTrigger>
               <TabsTrigger value="favorites">Избранное</TabsTrigger>
               <TabsTrigger value="history">История просмотров</TabsTrigger>
             </TabsList>
@@ -215,7 +287,21 @@ export function UserProfile() {
                           disabled
                           className="bg-[#2a2a2a] border-[#3a3a3a] opacity-60"
                         />
-                        <p className="text-xs text-gray-400">Адрес электронной почты изменить нельзя</p>
+                        <p className="text-xs text-gray-400">Для смены адреса электронной почты перейдите в раздел "Безопасность"</p>
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="avatar-upload-profile" className="text-sm font-medium">Аватар</label>
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            id="avatar-upload-profile"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarUpload}
+                            disabled={uploading}
+                            className="bg-[#2a2a2a] border-[#3a3a3a]"
+                          />
+                          {uploading && <div className="w-5 h-5 border-t-2 border-red-500 border-solid rounded-full animate-spin"></div>}
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -260,6 +346,149 @@ export function UserProfile() {
                     </Button>
                   )}
                 </CardFooter>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="security">
+              <Card className="bg-[#1a1a1a] border-[#2a2a2a]">
+                <CardHeader>
+                  <CardTitle>Безопасность аккаунта</CardTitle>
+                  <CardDescription>
+                    Управление электронной почтой и паролем
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Электронная почта</h3>
+                    <p className="text-sm text-gray-400 mb-4">Текущий email: {user.email}</p>
+                    
+                    <Dialog open={isChangingEmail} onOpenChange={setIsChangingEmail}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" className="flex items-center">
+                          <Mail className="w-4 h-4 mr-2" />
+                          Изменить Email
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
+                        <DialogHeader>
+                          <DialogTitle>Изменение электронной почты</DialogTitle>
+                          <DialogDescription>
+                            На новый адрес будет отправлено письмо с подтверждением
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <label htmlFor="new-email" className="text-sm font-medium">Новый Email</label>
+                            <Input
+                              id="new-email"
+                              type="email"
+                              placeholder="new-email@example.com"
+                              value={newEmail}
+                              onChange={(e) => setNewEmail(e.target.value)}
+                              className="bg-[#2a2a2a] border-[#3a3a3a]"
+                            />
+                          </div>
+                          
+                          <Alert className="bg-[#2a2a2a] border-amber-600">
+                            <AlertDescription>
+                              После изменения адреса электронной почты вам придется повторно войти в систему
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                        
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setIsChangingEmail(false)}>Отмена</Button>
+                          <Button onClick={handleEmailChange}>Изменить Email</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  
+                  <Separator className="bg-[#2a2a2a]" />
+                  
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Пароль</h3>
+                    
+                    <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
+                      <Dialog open={isChangingPassword} onOpenChange={setIsChangingPassword}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="flex items-center">
+                            <Lock className="w-4 h-4 mr-2" />
+                            Изменить пароль
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
+                          <DialogHeader>
+                            <DialogTitle>Изменение пароля</DialogTitle>
+                            <DialogDescription>
+                              Введите новый пароль для вашего аккаунта
+                            </DialogDescription>
+                          </DialogHeader>
+                          
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <label htmlFor="new-password" className="text-sm font-medium">Новый пароль</label>
+                              <Input
+                                id="new-password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="bg-[#2a2a2a] border-[#3a3a3a]"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <label htmlFor="confirm-password" className="text-sm font-medium">Подтвердите пароль</label>
+                              <Input
+                                id="confirm-password"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className="bg-[#2a2a2a] border-[#3a3a3a]"
+                              />
+                            </div>
+                          </div>
+                          
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsChangingPassword(false)}>Отмена</Button>
+                            <Button onClick={handlePasswordChange}>Сохранить пароль</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                      
+                      <Dialog open={isResetingPassword} onOpenChange={setIsResetingPassword}>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" className="flex items-center">
+                            <KeyRound className="w-4 h-4 mr-2" />
+                            Сбросить пароль
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
+                          <DialogHeader>
+                            <DialogTitle>Сброс пароля</DialogTitle>
+                            <DialogDescription>
+                              Инструкции по сбросу пароля будут отправлены на ваш email
+                            </DialogDescription>
+                          </DialogHeader>
+                          
+                          <div className="py-4">
+                            <Alert className="bg-[#2a2a2a] border-amber-600">
+                              <AlertDescription>
+                                Письмо со ссылкой для сброса пароля будет отправлено на адрес {user.email}
+                              </AlertDescription>
+                            </Alert>
+                          </div>
+                          
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsResetingPassword(false)}>Отмена</Button>
+                            <Button onClick={handlePasswordReset}>Отправить инструкции</Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+                </CardContent>
               </Card>
             </TabsContent>
             
