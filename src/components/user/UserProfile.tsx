@@ -353,7 +353,7 @@ export function UserProfile() {
                           </div>
                           
                           <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsChangingPassword(false)}>Отмена</Button>
+                            <Button variant="outline" onClick={() => setIsChangingPassword(false)} className="text-zinc-950">Отмена</Button>
                             <Button onClick={handlePasswordChange}>Сохранить пароль</Button>
                           </DialogFooter>
                         </DialogContent>
