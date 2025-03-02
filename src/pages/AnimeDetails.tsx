@@ -130,7 +130,7 @@ const AnimeDetails = () => {
                   Смотреть
                 </Button>}
               
-              <Button variant="outline" onClick={handleToggleFavorite} disabled={processingFavorite} className="bg-zinc-50 rounded-xl text-zinc-800">
+              <Button variant="outline" onClick={handleToggleFavorite} disabled={processingFavorite} className="bg-zinc-50 rounded-xl text-zinc-950">
                 <Heart size={16} className={`mr-2 ${processingFavorite ? 'animate-pulse' : ''}`} fill={isFavorited ? "currentColor" : "none"} />
                 {processingFavorite ? "Обновление..." : isFavorited ? "В избранном" : "В избранное"}
               </Button>
