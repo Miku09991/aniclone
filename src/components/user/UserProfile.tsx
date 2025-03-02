@@ -273,14 +273,14 @@ export function UserProfile() {
             <TabsContent value="security">
               <Card className="bg-[#1a1a1a] border-[#2a2a2a]">
                 <CardHeader>
-                  <CardTitle>Безопасность аккаунта</CardTitle>
+                  <CardTitle className="text-slate-50">Безопасность аккаунта</CardTitle>
                   <CardDescription>
                     Управление электронной почтой и паролем
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-2">Электронная почта</h3>
+                    <h3 className="text-lg font-medium mb-2 text-slate-50">Электронная почта</h3>
                     <p className="text-sm text-gray-400 mb-4">Текущий email: {user.email}</p>
                     
                     <Dialog open={isChangingEmail} onOpenChange={setIsChangingEmail}>
@@ -322,7 +322,7 @@ export function UserProfile() {
                   <Separator className="bg-[#2a2a2a]" />
                   
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Пароль</h3>
+                    <h3 className="text-lg font-medium mb-4 text-slate-50">Пароль</h3>
                     
                     <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
                       <Dialog open={isChangingPassword} onOpenChange={setIsChangingPassword}>
