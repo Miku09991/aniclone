@@ -305,14 +305,14 @@ export function UserProfile() {
                           </div>
                           
                           <Alert className="bg-[#2a2a2a] border-amber-600">
-                            <AlertDescription>
+                            <AlertDescription className="rounded bg-zinc-50 px-[4px] mx-[15px] my-0 py-px">
                               После изменения адреса электронной почты вам придется повторно войти в систему
                             </AlertDescription>
                           </Alert>
                         </div>
                         
                         <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsChangingEmail(false)}>Отмена</Button>
+                          <Button variant="outline" onClick={() => setIsChangingEmail(false)} className="text-zinc-950">Отмена</Button>
                           <Button onClick={handleEmailChange}>Изменить Email</Button>
                         </DialogFooter>
                       </DialogContent>
