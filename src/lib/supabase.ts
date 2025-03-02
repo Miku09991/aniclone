@@ -100,57 +100,89 @@ export async function searchAnime(query: string) {
 }
 
 export async function toggleFavorite(animeId: number) {
-  const user = await supabase.auth.getUser();
-  if (!user.data.user) return false;
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    console.error('Error getting user:', userError);
+    return false;
+  }
   
-  const { data: existingFavorite } = await supabase
+  const userId = userData.user.id;
+  
+  // Check if the anime is already in favorites
+  const { data: existingFavorite, error: checkError } = await supabase
     .from('favorites')
-    .select('*')
+    .select('id')
     .eq('anime_id', animeId)
-    .eq('user_id', user.data.user.id)
+    .eq('user_id', userId)
     .maybeSingle();
   
+  if (checkError) {
+    console.error('Error checking favorites:', checkError);
+    return false;
+  }
+  
   if (existingFavorite) {
-    const { error } = await supabase
+    // Remove from favorites
+    const { error: deleteError } = await supabase
       .from('favorites')
       .delete()
       .eq('id', existingFavorite.id);
     
-    return !error;
+    if (deleteError) {
+      console.error('Error removing from favorites:', deleteError);
+      return false;
+    }
+    
+    return false; // Return false to indicate it's no longer a favorite
   } else {
-    const { error } = await supabase
+    // Add to favorites
+    const { error: insertError } = await supabase
       .from('favorites')
       .insert({
         anime_id: animeId,
-        user_id: user.data.user.id
+        user_id: userId
       });
     
-    return !error;
+    if (insertError) {
+      console.error('Error adding to favorites:', insertError);
+      return false;
+    }
+    
+    return true; // Return true to indicate it's now a favorite
   }
 }
 
 export async function isFavorite(animeId: number) {
-  const user = await supabase.auth.getUser();
-  if (!user.data.user) return false;
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return false;
+  }
   
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('favorites')
     .select('id')
     .eq('anime_id', animeId)
-    .eq('user_id', user.data.user.id)
+    .eq('user_id', userData.user.id)
     .maybeSingle();
+  
+  if (error) {
+    console.error('Error checking favorite status:', error);
+    return false;
+  }
   
   return !!data;
 }
 
 export async function getFavoriteAnimes() {
-  const user = await supabase.auth.getUser();
-  if (!user.data.user) return [];
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    return [];
+  }
   
   const { data, error } = await supabase
     .from('favorites')
     .select('anime_id, animes(*)')
-    .eq('user_id', user.data.user.id);
+    .eq('user_id', userData.user.id);
   
   if (error) {
     console.error('Error fetching favorites:', error);
@@ -158,4 +190,37 @@ export async function getFavoriteAnimes() {
   }
   
   return data.map(item => item.animes as unknown as Anime);
+}
+
+// New function to fetch anime with videos
+export async function getAnimesWithVideos(limit = 10) {
+  const { data, error } = await supabase
+    .from('animes')
+    .select('*')
+    .not('video_url', 'is', null)
+    .limit(limit);
+  
+  if (error) {
+    console.error('Error fetching animes with videos:', error);
+    return [];
+  }
+  
+  return data as Anime[];
+}
+
+// New function to sync anime database
+export async function syncAnimeDatabase() {
+  try {
+    const { data, error } = await supabase.functions.invoke('sync-anime');
+    
+    if (error) {
+      console.error('Error syncing anime database:', error);
+      return { success: false, message: error.message };
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Error calling sync function:', err);
+    return { success: false, message: 'Failed to sync anime database' };
+  }
 }

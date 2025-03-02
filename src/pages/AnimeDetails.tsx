@@ -9,12 +9,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getAnimeById, toggleFavorite, isFavorite } from "@/lib/supabase";
 import { Anime } from "@/types/anime";
 import LoadingSpinner from "@/components/home/LoadingSpinner";
+import NavigationMenu from "@/components/layout/NavigationMenu";
+import Footer from "@/components/layout/Footer";
 
 const AnimeDetails = () => {
   const { id } = useParams<{ id: string }>();
   const [anime, setAnime] = useState<Anime | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
+  const [processingFavorite, setProcessingFavorite] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -73,14 +76,15 @@ const AnimeDetails = () => {
     }
     
     try {
-      await toggleFavorite(anime.id);
-      setIsFavorited(!isFavorited);
+      setProcessingFavorite(true);
+      const result = await toggleFavorite(anime.id);
+      setIsFavorited(result);
       
       toast({
-        title: isFavorited ? "Удалено из избранного" : "Добавлено в избранное",
-        description: isFavorited 
-          ? `"${anime.title}" удалено из избранного` 
-          : `"${anime.title}" добавлено в избранное`,
+        title: result ? "Добавлено в избранное" : "Удалено из избранного",
+        description: result 
+          ? `"${anime.title}" добавлено в избранное` 
+          : `"${anime.title}" удалено из избранного`,
       });
     } catch (error) {
       console.error("Error toggling favorite:", error);
@@ -89,6 +93,8 @@ const AnimeDetails = () => {
         description: "Не удалось обновить избранное",
         variant: "destructive",
       });
+    } finally {
+      setProcessingFavorite(false);
     }
   };
 
@@ -111,6 +117,7 @@ const AnimeDetails = () => {
 
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white">
+      <NavigationMenu />
       <div className="container mx-auto px-4 py-8">
         <Button 
           variant="ghost" 
@@ -150,13 +157,16 @@ const AnimeDetails = () => {
                 variant="outline"
                 className={`${isFavorited ? 'text-red-500 border-red-500' : ''}`}
                 onClick={handleToggleFavorite}
+                disabled={processingFavorite}
               >
                 <Heart 
                   size={16} 
-                  className="mr-2" 
+                  className={`mr-2 ${processingFavorite ? 'animate-pulse' : ''}`}
                   fill={isFavorited ? "currentColor" : "none"} 
                 />
-                {isFavorited ? "В избранном" : "В избранное"}
+                {processingFavorite 
+                  ? "Обновление..." 
+                  : (isFavorited ? "В избранном" : "В избранное")}
               </Button>
             </div>
             
@@ -232,6 +242,7 @@ const AnimeDetails = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

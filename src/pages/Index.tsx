@@ -7,14 +7,16 @@ import LoadingSpinner from "@/components/home/LoadingSpinner";
 import NavigationMenu from "@/components/layout/NavigationMenu";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
-import { getAnimeList } from "@/lib/supabase";
-import { importAnimeData } from "@/services/importService";
+import { getAnimeList, getAnimesWithVideos, syncAnimeDatabase } from "@/lib/supabase";
 import { Anime } from "@/types/anime";
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [loading, setLoading] = useState(true);
   const [animeList, setAnimeList] = useState<Anime[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [videoAnimeList, setVideoAnimeList] = useState<Anime[]>([]);
+  const { toast } = useToast();
 
   // Функция для загрузки данных
   const fetchData = async () => {
@@ -23,19 +25,52 @@ const Index = () => {
       // Получаем список аниме
       const { data, count } = await getAnimeList(1, 20);
       
-      // Если нет данных, запускаем импорт
-      if (count === 0) {
-        const imported = await importAnimeData();
-        if (imported) {
-          // Если импорт успешен, загружаем данные снова
+      // Если нет данных или данных мало, запускаем синхронизацию
+      if (count === 0 || count < 10) {
+        toast({
+          title: "Синхронизация базы данных",
+          description: "Загружаем данные об аниме, пожалуйста подождите...",
+        });
+        
+        const syncResult = await syncAnimeDatabase();
+        
+        if (syncResult.success) {
+          toast({
+            title: "Синхронизация завершена",
+            description: syncResult.message,
+          });
+          
+          // После успешной синхронизации загружаем данные снова
           const result = await getAnimeList(1, 20);
           setAnimeList(result.data);
+          
+          // Также загружаем аниме с видео
+          const videosResult = await getAnimesWithVideos();
+          setVideoAnimeList(videosResult);
+        } else {
+          toast({
+            title: "Ошибка синхронизации",
+            description: syncResult.message,
+            variant: "destructive",
+          });
+          
+          // Используем то, что есть
+          setAnimeList(data);
         }
       } else {
         setAnimeList(data);
+        
+        // Загружаем аниме с видео
+        const videosResult = await getAnimesWithVideos();
+        setVideoAnimeList(videosResult);
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить данные аниме",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -61,15 +96,14 @@ const Index = () => {
   // Получаем первые 5 аниме для слайдера (или меньше, если данных меньше)
   const heroSlides = animeList.slice(0, 5);
   
-  // Получаем новые релизы (с условным флагом newEpisodes)
-  const newReleases = animeList
-    .filter(anime => anime.status === "Выходит")
-    .map(anime => ({ ...anime, newEpisodes: Math.floor(Math.random() * 3) + 1 }))
-    .slice(0, 3);
+  // Получаем новые релизы с видео
+  const newReleases = videoAnimeList
+    .slice(0, 3)
+    .map(anime => ({ ...anime, newEpisodes: Math.floor(Math.random() * 3) + 1 }));
   
-  // Получаем популярное аниме (просто другие 6 записей)
+  // Получаем популярное аниме с высоким рейтингом
   const popularAnime = animeList
-    .filter(anime => anime.rating >= 8.5)
+    .filter(anime => anime.rating >= 8)
     .slice(0, 6);
 
   return (
