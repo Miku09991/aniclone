@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Anime } from '@/types/anime';
 
@@ -22,7 +21,6 @@ export type Favorite = {
   created_at: string;
 };
 
-// Функция для получения профиля пользователя
 export async function getProfile(userId: string) {
   const { data, error } = await supabase
     .from('profiles')
@@ -38,7 +36,6 @@ export async function getProfile(userId: string) {
   return data as Profile;
 }
 
-// Функция для обновления профиля пользователя
 export async function updateProfile(userId: string, updates: Partial<Profile>) {
   const { error } = await supabase
     .from('profiles')
@@ -53,7 +50,6 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
   return true;
 }
 
-// Функция для получения аниме по ID
 export async function getAnimeById(id: number) {
   const { data, error } = await supabase
     .from('animes')
@@ -69,7 +65,6 @@ export async function getAnimeById(id: number) {
   return data as Anime;
 }
 
-// Функция для получения списка аниме с пагинацией
 export async function getAnimeList(page = 1, limit = 12) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -88,7 +83,6 @@ export async function getAnimeList(page = 1, limit = 12) {
   return { data: data as Anime[], count: count || 0 };
 }
 
-// Функция для поиска аниме
 export async function searchAnime(query: string) {
   const { data, error } = await supabase
     .from('animes')
@@ -104,7 +98,6 @@ export async function searchAnime(query: string) {
   return data as Anime[];
 }
 
-// Функция для добавления/удаления аниме из избранного
 export async function toggleFavorite(animeId: number) {
   const user = await supabase.auth.getUser();
   if (!user.data.user) return false;
@@ -117,7 +110,6 @@ export async function toggleFavorite(animeId: number) {
     .maybeSingle();
   
   if (existingFavorite) {
-    // Удаляем из избранного
     const { error } = await supabase
       .from('favorites')
       .delete()
@@ -125,7 +117,6 @@ export async function toggleFavorite(animeId: number) {
     
     return !error;
   } else {
-    // Добавляем в избранное
     const { error } = await supabase
       .from('favorites')
       .insert({
@@ -137,7 +128,6 @@ export async function toggleFavorite(animeId: number) {
   }
 }
 
-// Проверка, находится ли аниме в избранном у пользователя
 export async function isFavorite(animeId: number) {
   const user = await supabase.auth.getUser();
   if (!user.data.user) return false;
@@ -152,7 +142,6 @@ export async function isFavorite(animeId: number) {
   return !!data;
 }
 
-// Получение избранных аниме пользователя
 export async function getFavoriteAnimes() {
   const user = await supabase.auth.getUser();
   if (!user.data.user) return [];
@@ -167,6 +156,5 @@ export async function getFavoriteAnimes() {
     return [];
   }
   
-  // Fix for the type error - properly map the data to Anime[]
-  return data.map(item => item.animes as Anime);
+  return data.map(item => item.animes as unknown as Anime);
 }
