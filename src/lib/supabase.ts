@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Anime } from '@/types/anime';
 
@@ -108,7 +107,6 @@ export async function toggleFavorite(animeId: number) {
   
   const userId = userData.user.id;
   
-  // Check if the anime is already in favorites
   const { data: existingFavorite, error: checkError } = await supabase
     .from('favorites')
     .select('id')
@@ -122,7 +120,6 @@ export async function toggleFavorite(animeId: number) {
   }
   
   if (existingFavorite) {
-    // Remove from favorites
     const { error: deleteError } = await supabase
       .from('favorites')
       .delete()
@@ -133,9 +130,8 @@ export async function toggleFavorite(animeId: number) {
       return false;
     }
     
-    return false; // Return false to indicate it's no longer a favorite
+    return false;
   } else {
-    // Add to favorites
     const { error: insertError } = await supabase
       .from('favorites')
       .insert({
@@ -148,7 +144,7 @@ export async function toggleFavorite(animeId: number) {
       return false;
     }
     
-    return true; // Return true to indicate it's now a favorite
+    return true;
   }
 }
 
@@ -192,7 +188,6 @@ export async function getFavoriteAnimes() {
   return data.map(item => item.animes as unknown as Anime);
 }
 
-// New function to fetch anime with videos
 export async function getAnimesWithVideos(limit = 10) {
   const { data, error } = await supabase
     .from('animes')
@@ -208,19 +203,43 @@ export async function getAnimesWithVideos(limit = 10) {
   return data as Anime[];
 }
 
-// New function to sync anime database
 export async function syncAnimeDatabase() {
   try {
     const { data, error } = await supabase.functions.invoke('sync-anime');
     
     if (error) {
-      console.error('Error syncing anime database:', error);
-      return { success: false, message: error.message };
+      console.error('Error syncing anime database with Jikan API:', error);
+      
+      const anilibriaResult = await importAnimeFromAnilibria();
+      return anilibriaResult;
     }
     
     return data;
   } catch (err) {
     console.error('Error calling sync function:', err);
-    return { success: false, message: 'Failed to sync anime database' };
+    
+    try {
+      const anilibriaResult = await importAnimeFromAnilibria();
+      return anilibriaResult;
+    } catch (anilibriaErr) {
+      console.error('Error calling AniLibria import function:', anilibriaErr);
+      return { success: false, message: 'Failed to sync anime database from any source' };
+    }
+  }
+}
+
+export async function importAnimeFromAnilibria() {
+  try {
+    const { data, error } = await supabase.functions.invoke('import-anilibria');
+    
+    if (error) {
+      console.error('Error importing anime from AniLibria:', error);
+      return { success: false, message: error.message };
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Error calling AniLibria import function:', err);
+    return { success: false, message: 'Failed to import anime from AniLibria' };
   }
 }
