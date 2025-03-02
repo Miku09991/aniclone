@@ -376,7 +376,7 @@ export function UserProfile() {
                           
                           <div className="py-4">
                             <Alert className="bg-[#2a2a2a] border-amber-600">
-                              <AlertDescription className="bg-zinc-50 px-[4px] py-[2px] my-0 mx-0 rounded-xl">
+                              <AlertDescription className="bg-zinc-50 px-[4px] py-[2px] rounded-xl mx-[15px] my-[2px]">
                                 Письмо со ссылкой для сброса пароля будет отправлено на адрес {user.email}
                               </AlertDescription>
                             </Alert>
