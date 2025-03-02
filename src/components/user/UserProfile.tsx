@@ -227,11 +227,11 @@ export function UserProfile() {
                 <CardContent className="space-y-4">
                   {isEditing ? <>
                       <div className="space-y-2">
-                        <label htmlFor="edit-username" className="text-sm font-medium">Имя пользователя</label>
+                        <label htmlFor="edit-username" className="text-sm font-medium rounded my-0 px-[4px] py-px bg-violet-800">Имя пользователя</label>
                         <Input id="edit-username" value={username} onChange={e => setUsername(e.target.value)} className="bg-[#2a2a2a] border-[#3a3a3a]" />
                       </div>
                       <div className="space-y-2">
-                        <label htmlFor="edit-email" className="text-sm font-medium">Email</label>
+                        <label htmlFor="edit-email" className="text-sm font-medium rounded bg-violet-800 px-[4px] py-px mx-0">Email</label>
                         <Input id="edit-email" type="email" value={user.email || ""} disabled className="bg-[#2a2a2a] border-[#3a3a3a] opacity-60" />
                         <p className="text-xs text-gray-400">Для смены адреса электронной почты перейдите в раздел "Безопасность"</p>
                       </div>
