@@ -6,18 +6,10 @@ import { Input } from "@/components/ui/input";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Search as SearchIcon, Loader2 } from "lucide-react";
-import { searchAnime } from "@/services/animeService";
-
-interface Anime {
-  id: number;
-  title: string;
-  image: string;
-  description?: string;
-  episodes?: number;
-  year?: number;
-  genre?: string[];
-  rating?: number;
-}
+import NavigationMenu from "@/components/layout/NavigationMenu";
+import Footer from "@/components/layout/Footer";
+import { searchAnime } from "@/lib/supabase";
+import { Anime } from "@/types/anime";
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,8 +48,9 @@ const Search = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
+      <NavigationMenu />
+      <div className="container mx-auto px-4 py-8 flex-grow">
         <Button 
           variant="ghost" 
           className="mb-6 text-gray-300 hover:text-white"
@@ -116,8 +109,8 @@ const Search = () => {
                         <Link to={`/anime/${anime.id}`}>{anime.title}</Link>
                       </h3>
                       <div className="flex flex-wrap gap-2 mb-3">
-                        {anime.genre?.slice(0, 3).map((genre) => (
-                          <span key={genre} className="text-xs px-2 py-0.5 bg-[#2a2a2a] rounded-full">
+                        {anime.genre?.slice(0, 3).map((genre, index) => (
+                          <span key={index} className="text-xs px-2 py-0.5 bg-[#2a2a2a] rounded-full">
                             {genre}
                           </span>
                         ))}
@@ -142,8 +135,13 @@ const Search = () => {
                             </div>
                           )}
                         </div>
-                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-400">
-                          Смотреть
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-500 hover:text-red-400"
+                          asChild
+                        >
+                          <Link to={`/watch/${anime.id}`}>Смотреть</Link>
                         </Button>
                       </div>
                     </div>
@@ -159,6 +157,7 @@ const Search = () => {
           </div>
         ) : null}
       </div>
+      <Footer />
     </div>
   );
 };

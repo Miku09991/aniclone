@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Anime } from '@/types/anime';
 

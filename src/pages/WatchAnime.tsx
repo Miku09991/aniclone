@@ -4,6 +4,8 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart, Share2 } from "lucide-react";
 import VideoPlayer from "@/components/anime/VideoPlayer";
+import NavigationMenu from "@/components/layout/NavigationMenu";
+import Footer from "@/components/layout/Footer";
 import { getAnimeById, toggleFavorite, isFavorite } from "@/lib/supabase";
 import { Anime } from "@/types/anime";
 import { useToast } from "@/components/ui/use-toast";
@@ -121,25 +123,38 @@ const WatchAnime = () => {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
+        <NavigationMenu />
+        <div className="flex-grow flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   if (!anime || !anime.video_url) {
     return (
-      <div className="min-h-screen bg-[#0f0f0f] text-white flex justify-center items-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Видео не найдено</h1>
-          <Button asChild>
-            <Link to="/">Вернуться на главную</Link>
-          </Button>
+      <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
+        <NavigationMenu />
+        <div className="flex-grow flex justify-center items-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Видео не найдено</h1>
+            <Button asChild>
+              <Link to="/">Вернуться на главную</Link>
+            </Button>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
+      <NavigationMenu />
+      <div className="container mx-auto px-4 py-8 flex-grow">
         <div className="mb-6 flex justify-between items-center">
           <Button 
             variant="ghost" 
@@ -230,6 +245,7 @@ const WatchAnime = () => {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

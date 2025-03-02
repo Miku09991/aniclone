@@ -4,6 +4,8 @@ import HeroSlider from "@/components/home/HeroSlider";
 import NewReleases from "@/components/home/NewReleases";
 import PopularAnime from "@/components/home/PopularAnime";
 import LoadingSpinner from "@/components/home/LoadingSpinner";
+import NavigationMenu from "@/components/layout/NavigationMenu";
+import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import { getAnimeList } from "@/lib/supabase";
 import { importAnimeData } from "@/services/importService";
@@ -71,8 +73,9 @@ const Index = () => {
     .slice(0, 6);
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white">
-      <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
+      <NavigationMenu />
+      <div className="container mx-auto px-4 py-4 flex-grow">
         {heroSlides.length > 0 && (
           <HeroSlider 
             slides={heroSlides} 
@@ -89,6 +92,7 @@ const Index = () => {
           <PopularAnime animeList={popularAnime} />
         )}
       </div>
+      <Footer />
       <Toaster />
     </div>
   );
