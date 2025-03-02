@@ -397,7 +397,7 @@ export function UserProfile() {
             <TabsContent value="favorites">
               <Card className="bg-[#1a1a1a] border-[#2a2a2a]">
                 <CardHeader>
-                  <CardTitle>Избранное аниме</CardTitle>
+                  <CardTitle className="text-slate-50">Избранное аниме</CardTitle>
                   <CardDescription>
                     Список аниме, добавленных в избранное
                   </CardDescription>
