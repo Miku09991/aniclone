@@ -231,12 +231,12 @@ export function UserProfile() {
                         <Input id="edit-username" value={username} onChange={e => setUsername(e.target.value)} className="bg-[#2a2a2a] border-[#3a3a3a]" />
                       </div>
                       <div className="space-y-2">
-                        <label htmlFor="edit-email" className="text-sm font-medium rounded bg-violet-800 px-[4px] py-px mx-0">Email</label>
+                        <label htmlFor="edit-email" className="text-sm font-medium rounded px-[4px] py-px mx-0 bg-violet-800">Email</label>
                         <Input id="edit-email" type="email" value={user.email || ""} disabled className="bg-[#2a2a2a] border-[#3a3a3a] opacity-60" />
                         <p className="text-xs text-gray-400">Для смены адреса электронной почты перейдите в раздел "Безопасность"</p>
                       </div>
                       <div className="space-y-2">
-                        <label htmlFor="avatar-upload-profile" className="text-sm font-medium">Аватар</label>
+                        <label htmlFor="avatar-upload-profile" className="text-sm font-medium px-[4px] py-px rounded bg-violet-800">Аватар</label>
                         <div className="flex items-center space-x-2">
                           <Input id="avatar-upload-profile" type="file" accept="image/*" onChange={handleAvatarUpload} disabled={uploading} className="bg-[#2a2a2a] border-[#3a3a3a]" />
                           {uploading && <div className="w-5 h-5 border-t-2 border-red-500 border-solid rounded-full animate-spin"></div>}
