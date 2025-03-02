@@ -427,7 +427,7 @@ export function UserProfile() {
             <TabsContent value="history">
               <Card className="bg-[#1a1a1a] border-[#2a2a2a]">
                 <CardHeader>
-                  <CardTitle>История просмотров</CardTitle>
+                  <CardTitle className="text-slate-50">История просмотров</CardTitle>
                   <CardDescription>
                     Недавно просмотренное аниме
                   </CardDescription>
