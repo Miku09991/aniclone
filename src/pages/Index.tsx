@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import HeroSlider from "@/components/home/HeroSlider";
 import NewReleases from "@/components/home/NewReleases";
@@ -10,10 +9,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { 
   getAnimeList, 
   getAnimesWithVideos, 
-  syncAnimeDatabase, 
-  autoSyncAnimeWithVideos, 
-  importAnimeFromDatabaseAnime 
+  syncAnimeDatabase
 } from "@/lib/supabase";
+import { importAnimeFromDatabaseAnime, autoSyncAnimeWithVideos } from "@/lib/api/animeImport";
 import { Anime } from "@/types/anime";
 import { useToast } from "@/components/ui/use-toast";
 
