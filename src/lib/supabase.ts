@@ -391,3 +391,20 @@ export async function autoSyncAnimeWithVideos() {
     return { success: false, message: 'Не удалось синхронизировать аниме с видео' };
   }
 }
+
+// Add this new function to import anime from DatabaseAnime
+export async function importAnimeFromDatabaseAnime() {
+  try {
+    const { data, error } = await supabase.functions.invoke('import-from-database-anime');
+    
+    if (error) {
+      console.error('Error importing anime from DatabaseAnime:', error);
+      return { success: false, message: error.message };
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Error calling DatabaseAnime import function:', err);
+    return { success: false, message: 'Failed to import anime from DatabaseAnime' };
+  }
+}

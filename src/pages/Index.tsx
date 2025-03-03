@@ -7,7 +7,13 @@ import LoadingSpinner from "@/components/home/LoadingSpinner";
 import NavigationMenu from "@/components/layout/NavigationMenu";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
-import { getAnimeList, getAnimesWithVideos, syncAnimeDatabase, autoSyncAnimeWithVideos } from "@/lib/supabase";
+import { 
+  getAnimeList, 
+  getAnimesWithVideos, 
+  syncAnimeDatabase, 
+  autoSyncAnimeWithVideos, 
+  importAnimeFromDatabaseAnime 
+} from "@/lib/supabase";
 import { Anime } from "@/types/anime";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -32,46 +38,61 @@ const Index = () => {
           description: "Загружаем данные об аниме, пожалуйста подождите...",
         });
         
-        const syncResult = await syncAnimeDatabase();
+        // Пробуем импортировать данные из DatabaseAnime
+        const dbAnimeResult = await importAnimeFromDatabaseAnime();
         
-        if (syncResult.success) {
+        if (dbAnimeResult.success) {
           toast({
-            title: "Синхронизация завершена",
-            description: syncResult.message,
+            title: "Импорт из DatabaseAnime завершен",
+            description: dbAnimeResult.message,
           });
           
-          // После успешной синхронизации загружаем данные снова
+          // После успешного импорта загружаем данные снова
           const result = await getAnimeList(1, 20);
           setAnimeList(result.data);
-          
-          // Также загружаем аниме с видео и автоматически ищем новые
-          const videosResult = await getAnimesWithVideos();
-          setVideoAnimeList(videosResult);
-          
-          // Автоматически ищем новые аниме с видео
-          autoSyncAnimeWithVideos().then(syncResult => {
-            if (syncResult.success) {
-              toast({
-                title: "Автоматическая синхронизация аниме",
-                description: syncResult.message,
-              });
-              
-              // Перезагружаем данные после синхронизации
-              getAnimesWithVideos().then(newVideosResult => {
-                setVideoAnimeList(newVideosResult);
-              });
-            }
-          });
         } else {
-          toast({
-            title: "Ошибка синхронизации",
-            description: syncResult.message,
-            variant: "destructive",
-          });
+          // Если импорт из DatabaseAnime не удался, используем обычную синхронизацию
+          const syncResult = await syncAnimeDatabase();
           
-          // Используем то, что есть
-          setAnimeList(data);
+          if (syncResult.success) {
+            toast({
+              title: "Синхронизация завершена",
+              description: syncResult.message,
+            });
+            
+            // После успешной синхронизации загружаем данные снова
+            const result = await getAnimeList(1, 20);
+            setAnimeList(result.data);
+          } else {
+            toast({
+              title: "Ошибка синхронизации",
+              description: syncResult.message,
+              variant: "destructive",
+            });
+            
+            // Используем то, что есть
+            setAnimeList(data);
+          }
         }
+        
+        // Загружаем аниме с видео и автоматически ищем новые
+        const videosResult = await getAnimesWithVideos();
+        setVideoAnimeList(videosResult);
+        
+        // Автоматически ищем новые аниме с видео
+        autoSyncAnimeWithVideos().then(syncResult => {
+          if (syncResult.success) {
+            toast({
+              title: "Автоматическая синхронизация аниме",
+              description: syncResult.message,
+            });
+            
+            // Перезагружаем данные после синхронизации
+            getAnimesWithVideos().then(newVideosResult => {
+              setVideoAnimeList(newVideosResult);
+            });
+          }
+        });
       } else {
         setAnimeList(data);
         
