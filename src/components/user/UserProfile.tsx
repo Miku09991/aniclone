@@ -15,6 +15,7 @@ import { Anime } from "@/types/anime";
 import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+
 export function UserProfile() {
   const {
     user,
@@ -29,7 +30,6 @@ export function UserProfile() {
     toast
   } = useToast();
 
-  // State for email and password change
   const [newEmail, setNewEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -37,7 +37,6 @@ export function UserProfile() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isResetingPassword, setIsResetingPassword] = useState(false);
 
-  // Получаем список избранных аниме
   const {
     data: favoriteAnimes = [],
     isLoading: isLoadingFavorites
@@ -46,6 +45,7 @@ export function UserProfile() {
     queryFn: getFavoriteAnimes,
     enabled: !!user
   });
+
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || event.target.files.length === 0 || !user) {
       return;
@@ -78,6 +78,7 @@ export function UserProfile() {
       setUploading(false);
     }
   };
+
   const handleSaveProfile = async () => {
     if (user) {
       const updates = {
@@ -91,7 +92,6 @@ export function UserProfile() {
           title: "Профиль обновлен",
           description: "Ваш профиль успешно обновлен"
         });
-        // Перезагрузка страницы для обновления данных профиля
         window.location.reload();
       } else {
         toast({
@@ -102,6 +102,7 @@ export function UserProfile() {
       }
     }
   };
+
   const handleEmailChange = async () => {
     if (!user?.email) return;
     const result = await updateUserEmail(newEmail);
@@ -120,6 +121,7 @@ export function UserProfile() {
       });
     }
   };
+
   const handlePasswordChange = async () => {
     if (password !== confirmPassword) {
       toast({
@@ -146,6 +148,7 @@ export function UserProfile() {
       });
     }
   };
+
   const handlePasswordReset = async () => {
     if (!user?.email) return;
     const result = await resetPassword(user.email);
@@ -163,11 +166,13 @@ export function UserProfile() {
       });
     }
   };
+
   if (!user || !profile) {
     return <div className="flex justify-center items-center h-[70vh]">
         <p className="text-white">Пожалуйста, войдите в аккаунт</p>
       </div>;
   }
+
   return <div className="container mx-auto py-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">
@@ -188,7 +193,7 @@ export function UserProfile() {
                       </label>
                     </div>}
                 </div>
-                <CardTitle className="text-xl text-violet-700">{profile.username}</CardTitle>
+                <CardTitle className="text-xl text-violet-600">{profile.username}</CardTitle>
                 <CardDescription className="text-gray-400">{user.email}</CardDescription>
               </div>
             </CardHeader>
@@ -305,7 +310,7 @@ export function UserProfile() {
                           </div>
                           
                           <Alert className="bg-[#2a2a2a] border-amber-600">
-                            <AlertDescription className="rounded bg-zinc-50 px-[4px] mx-[15px] my-0 py-px">
+                            <AlertDescription className="bg-zinc-50 rounded-xl my-[3px] mx-[50px] px-[15px] py-[5px]">
                               После изменения адреса электронной почты вам придется повторно войти в систему
                             </AlertDescription>
                           </Alert>
