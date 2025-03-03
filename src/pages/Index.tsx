@@ -7,7 +7,7 @@ import LoadingSpinner from "@/components/home/LoadingSpinner";
 import NavigationMenu from "@/components/layout/NavigationMenu";
 import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/toaster";
-import { getAnimeList, getAnimesWithVideos, syncAnimeDatabase } from "@/lib/supabase";
+import { getAnimeList, getAnimesWithVideos, syncAnimeDatabase, autoSyncAnimeWithVideos } from "@/lib/supabase";
 import { Anime } from "@/types/anime";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -44,9 +44,24 @@ const Index = () => {
           const result = await getAnimeList(1, 20);
           setAnimeList(result.data);
           
-          // Также загружаем аниме с видео
+          // Также загружаем аниме с видео и автоматически ищем новые
           const videosResult = await getAnimesWithVideos();
           setVideoAnimeList(videosResult);
+          
+          // Автоматически ищем новые аниме с видео
+          autoSyncAnimeWithVideos().then(syncResult => {
+            if (syncResult.success) {
+              toast({
+                title: "Автоматическая синхронизация аниме",
+                description: syncResult.message,
+              });
+              
+              // Перезагружаем данные после синхронизации
+              getAnimesWithVideos().then(newVideosResult => {
+                setVideoAnimeList(newVideosResult);
+              });
+            }
+          });
         } else {
           toast({
             title: "Ошибка синхронизации",
@@ -63,6 +78,21 @@ const Index = () => {
         // Загружаем аниме с видео
         const videosResult = await getAnimesWithVideos();
         setVideoAnimeList(videosResult);
+        
+        // Автоматически ищем новые аниме с видео
+        autoSyncAnimeWithVideos().then(syncResult => {
+          if (syncResult.success) {
+            toast({
+              title: "Автоматическая синхронизация аниме",
+              description: syncResult.message,
+            });
+            
+            // Перезагружаем данные после синхронизации
+            getAnimesWithVideos().then(newVideosResult => {
+              setVideoAnimeList(newVideosResult);
+            });
+          }
+        });
       }
     } catch (error) {
       console.error("Error fetching data:", error);

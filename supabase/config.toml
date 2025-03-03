@@ -43,4 +43,3 @@ secret = "env(GOOGLE_CLIENT_SECRET)"
 
 [functions]
 port = 54321
-

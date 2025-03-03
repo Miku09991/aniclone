@@ -365,3 +365,29 @@ export async function importAnimeWithVideos() {
     return { success: false, message: 'Не удалось импортировать аниме с видео' };
   }
 }
+
+// Auto-sync anime with videos
+export async function autoSyncAnimeWithVideos() {
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) {
+      return { success: false, message: 'Требуется авторизация' };
+    }
+
+    const { data, error } = await supabase.functions.invoke('auto-sync-anime', {
+      headers: {
+        Authorization: `Bearer ${session.session.access_token}`
+      }
+    });
+    
+    if (error) {
+      console.error('Error syncing anime with videos:', error);
+      return { success: false, message: error.message };
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Error calling auto-sync-anime function:', err);
+    return { success: false, message: 'Не удалось синхронизировать аниме с видео' };
+  }
+}
