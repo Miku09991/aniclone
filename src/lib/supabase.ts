@@ -339,3 +339,29 @@ export async function importAnimeFromAnilibria() {
     return { success: false, message: 'Failed to import anime from AniLibria' };
   }
 }
+
+// New function for importing anime with videos
+export async function importAnimeWithVideos() {
+  try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session) {
+      return { success: false, message: 'Требуется авторизация' };
+    }
+
+    const { data, error } = await supabase.functions.invoke('import-anime-with-videos', {
+      headers: {
+        Authorization: `Bearer ${session.session.access_token}`
+      }
+    });
+    
+    if (error) {
+      console.error('Error importing anime with videos:', error);
+      return { success: false, message: error.message };
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Error calling import-anime-with-videos function:', err);
+    return { success: false, message: 'Не удалось импортировать аниме с видео' };
+  }
+}
