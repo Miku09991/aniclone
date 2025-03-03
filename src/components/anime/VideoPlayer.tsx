@@ -1,14 +1,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, VolumeX, Maximize, SkipForward, SkipBack } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Maximize, SkipForward, SkipBack, Loader2 } from "lucide-react";
+import { fetchSampleVideoForAnime } from "@/lib/api/animeImport";
+import { toast } from "@/components/ui/use-toast";
 
 interface VideoPlayerProps {
   videoUrl: string;
   title: string;
+  animeId?: number;
 }
 
-const VideoPlayer = ({ videoUrl, title }: VideoPlayerProps) => {
+const VideoPlayer = ({ videoUrl, title, animeId }: VideoPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -17,10 +20,17 @@ const VideoPlayer = ({ videoUrl, title }: VideoPlayerProps) => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [videoSource, setVideoSource] = useState(videoUrl);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<HTMLDivElement | null>(null);
   const controlsTimeout = useRef<number | null>(null);
+
+  // Update video source if prop changes
+  useEffect(() => {
+    setVideoSource(videoUrl);
+  }, [videoUrl]);
 
   // Обработка метаданных видео
   const handleLoadedMetadata = () => {
@@ -114,6 +124,39 @@ const VideoPlayer = ({ videoUrl, title }: VideoPlayerProps) => {
     }
   };
 
+  // Try to fetch a sample video if this anime doesn't have one
+  const fetchSampleVideo = async () => {
+    if (!animeId) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await fetchSampleVideoForAnime(animeId);
+      
+      if (result.success && result.videoUrl) {
+        setVideoSource(result.videoUrl);
+        toast({
+          title: "Видео добавлено",
+          description: "Демо-видео было добавлено для этого аниме"
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: result.message || "Не удалось добавить видео",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching sample video:", error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось добавить видео",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Скрытие элементов управления после бездействия
   useEffect(() => {
     const showControls = () => {
@@ -156,6 +199,31 @@ const VideoPlayer = ({ videoUrl, title }: VideoPlayerProps) => {
     };
   }, [isPlaying, isControlsVisible]);
 
+  // If there's no video URL and we have an animeId, show a button to fetch a sample video
+  if (!videoSource && animeId) {
+    return (
+      <div className="relative w-full bg-black rounded-lg overflow-hidden flex items-center justify-center" style={{ minHeight: "300px" }}>
+        <div className="text-center p-8">
+          <p className="text-white mb-4">Для этого аниме пока нет видео</p>
+          <Button 
+            onClick={fetchSampleVideo} 
+            className="bg-red-500 hover:bg-red-600"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Загрузка...
+              </>
+            ) : (
+              "Добавить демо-видео"
+            )}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       ref={playerRef}
@@ -164,7 +232,7 @@ const VideoPlayer = ({ videoUrl, title }: VideoPlayerProps) => {
       <video
         ref={videoRef}
         className="w-full h-full"
-        src={videoUrl}
+        src={videoSource}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onClick={togglePlay}

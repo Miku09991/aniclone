@@ -79,3 +79,45 @@ export async function importAnimeWithVideos() {
     return { success: false, message: 'Не удалось импортировать аниме с видео' };
   }
 }
+
+/**
+ * Fetches sample video URL for anime that don't have one
+ * @param animeId ID of the anime to update
+ */
+export async function fetchSampleVideoForAnime(animeId: number) {
+  try {
+    const { data, error } = await supabase.functions.invoke('fetch-sample-video', {
+      body: { animeId }
+    });
+    
+    if (error) {
+      console.error('Error fetching sample video:', error);
+      return { success: false, message: error.message };
+    }
+    
+    return data;
+  } catch (err) {
+    console.error('Error calling fetch-sample-video function:', err);
+    return { success: false, message: 'Не удалось найти видео для аниме' };
+  }
+}
+
+/**
+ * Full import of anime database with enhanced search capabilities
+ */
+export async function performFullAnimeImport() {
+  try {
+    const { data, error } = await supabase.functions.invoke('import-from-database-anime');
+    
+    if (error) {
+      console.error('Error performing full anime import:', error);
+      return { success: false, message: error.message };
+    }
+    
+    console.log('Full anime import result:', data);
+    return data;
+  } catch (err) {
+    console.error('Error calling full anime import function:', err);
+    return { success: false, message: 'Не удалось выполнить полный импорт аниме' };
+  }
+}

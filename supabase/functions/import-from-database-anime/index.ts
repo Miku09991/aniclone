@@ -1,126 +1,161 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+// Handle CORS preflight requests
+function handleCors(req: Request) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+}
+
+serve(async (req) => {
+  // Handle CORS
+  const corsResponse = handleCors(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    console.log('Fetching anime from DatabaseAnime...');
     
-    console.log('Starting DatabaseAnime import process...');
+    // Retrieve a large set of anime from DatabaseAnime GitHub repository
+    // This uses the raw content API to get the data
+    // We'll get multiple JSON files to maximize the import
     
-    // URL to the DatabaseAnime repository's data (you can update this to point to specific files if needed)
-    const baseUrl = 'https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data';
+    const baseUrl = "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data";
+    const categories = ['tv', 'movie', 'ova', 'special'];
     
-    // Fetch the anime list
-    console.log('Fetching anime data from DatabaseAnime repository...');
-    const animeListUrl = `${baseUrl}/anime.json`;
-    const animeListResponse = await fetch(animeListUrl);
+    let totalImported = 0;
+    let totalUpdated = 0;
+    let totalSkipped = 0;
+    let errors = 0;
     
-    if (!animeListResponse.ok) {
-      throw new Error(`Failed to fetch anime list: ${animeListResponse.status}`);
+    // Process each category
+    for (const category of categories) {
+      try {
+        // Fetch anime list for the category
+        console.log(`Fetching ${category} anime...`);
+        const response = await fetch(`${baseUrl}/${category}.json`);
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch ${category} anime: ${response.statusText}`);
+          continue;
+        }
+        
+        const animeList = await response.json();
+        console.log(`Found ${animeList.length} ${category} anime`);
+        
+        // Process in batches to avoid timeouts and memory issues
+        const batchSize = 50;
+        const batches = Math.ceil(animeList.length / batchSize);
+        
+        for (let i = 0; i < batches; i++) {
+          const batchStart = i * batchSize;
+          const batchEnd = Math.min((i + 1) * batchSize, animeList.length);
+          const batch = animeList.slice(batchStart, batchEnd);
+          
+          console.log(`Processing batch ${i+1}/${batches} for ${category} (${batchStart}-${batchEnd})`);
+          
+          // Process each anime in the batch
+          for (const anime of batch) {
+            try {
+              // Check if anime already exists (by title)
+              const { data: existingAnime, error: queryError } = await supabase
+                .from('animes')
+                .select('id, title')
+                .ilike('title', anime.title)
+                .maybeSingle();
+              
+              if (queryError) {
+                console.error(`Error checking if anime exists: ${queryError.message}`);
+                errors++;
+                continue;
+              }
+              
+              // Prepare anime data
+              const animeData = {
+                title: anime.title,
+                description: anime.description || anime.synopsis || '',
+                image: anime.image || anime.imageUrl || anime.imageURL || anime.poster || '',
+                genre: anime.genres ? JSON.parse(JSON.stringify(anime.genres)) : [],
+                year: parseInt(anime.year) || (anime.aired ? parseInt(anime.aired.split(' to ')[0]) : null),
+                episodes: parseInt(anime.episodesCount) || parseInt(anime.episodes) || 0,
+                rating: parseFloat(anime.score) || parseFloat(anime.rating) || 0,
+                status: anime.status || category.toUpperCase(),
+                video_url: anime.videoUrl || anime.trailer || null
+              };
+              
+              if (existingAnime) {
+                // Update existing anime
+                const { error: updateError } = await supabase
+                  .from('animes')
+                  .update(animeData)
+                  .eq('id', existingAnime.id);
+                
+                if (updateError) {
+                  console.error(`Error updating anime ${anime.title}: ${updateError.message}`);
+                  errors++;
+                } else {
+                  totalUpdated++;
+                }
+              } else {
+                // Insert new anime
+                const { error: insertError } = await supabase
+                  .from('animes')
+                  .insert(animeData);
+                
+                if (insertError) {
+                  console.error(`Error inserting anime ${anime.title}: ${insertError.message}`);
+                  errors++;
+                } else {
+                  totalImported++;
+                }
+              }
+            } catch (err) {
+              console.error(`Error processing anime ${anime.title}: ${err.message}`);
+              errors++;
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`Error processing ${category} category: ${err.message}`);
+        errors++;
+      }
     }
     
-    const animeList = await animeListResponse.json();
-    console.log(`Found ${animeList.length} anime entries in DatabaseAnime`);
-    
-    // Process and insert anime data
-    let importedCount = 0;
-    let updatedCount = 0;
-    let skippedCount = 0;
-    
-    for (const anime of animeList) {
-      // Check if anime already exists in our database by title
-      const { data: existingAnime, error: searchError } = await supabase
-        .from('animes')
-        .select('id, title')
-        .ilike('title', anime.title)
-        .maybeSingle();
-      
-      if (searchError) {
-        console.error(`Error searching for anime: ${searchError.message}`);
-        continue;
-      }
-      
-      // Prepare anime data
-      const animeData = {
-        title: anime.title || 'Unknown Title',
-        description: anime.description || anime.synopsis || '',
-        image: anime.imageUrl || anime.poster || '',
-        episodes: anime.episodeCount || 0,
-        status: anime.status || 'Unknown',
-        year: parseInt(anime.year) || new Date().getFullYear(),
-        rating: parseFloat(anime.score) || 0,
-        genre: Array.isArray(anime.genres) ? anime.genres : 
-               (typeof anime.genres === 'string' ? anime.genres.split(',').map(g => g.trim()) : [])
-      };
-      
-      // Insert or update the anime
-      if (existingAnime) {
-        const { error: updateError } = await supabase
-          .from('animes')
-          .update(animeData)
-          .eq('id', existingAnime.id);
-        
-        if (updateError) {
-          console.error(`Error updating anime ${anime.title}: ${updateError.message}`);
-          skippedCount++;
-        } else {
-          updatedCount++;
-        }
-      } else {
-        const { error: insertError } = await supabase
-          .from('animes')
-          .insert(animeData);
-        
-        if (insertError) {
-          console.error(`Error inserting anime ${anime.title}: ${insertError.message}`);
-          skippedCount++;
-        } else {
-          importedCount++;
-        }
-      }
-    }
-    
-    const result = {
+    // Generate a summary
+    const summary = {
       success: true,
-      message: `Imported ${importedCount} new anime, updated ${updatedCount} existing entries, and skipped ${skippedCount} due to errors.`,
-      data: {
-        imported: importedCount,
-        updated: updatedCount,
-        skipped: skippedCount,
-        total: animeList.length
+      message: `Imported ${totalImported} new anime, updated ${totalUpdated} existing anime. ${errors} errors encountered.`,
+      stats: {
+        imported: totalImported,
+        updated: totalUpdated,
+        skipped: totalSkipped,
+        errors: errors
       }
     };
     
-    console.log(`Import complete: ${result.message}`);
-    
-    return new Response(JSON.stringify(result), {
+    console.log(`Import completed: ${JSON.stringify(summary)}`);
+    return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      status: 200
     });
-  } catch (error) {
-    console.error(`DatabaseAnime import failed: ${error.message}`);
-    
-    const errorResult = {
+  } catch (err) {
+    console.error(`Global error in import function: ${err.message}`);
+    return new Response(JSON.stringify({
       success: false,
-      message: `Failed to import from DatabaseAnime: ${error.message}`,
-    };
-    
-    return new Response(JSON.stringify(errorResult), {
+      message: `Failed to import anime: ${err.message}`
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      status: 500
     });
   }
 });
