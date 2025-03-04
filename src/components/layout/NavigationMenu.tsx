@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,22 +10,22 @@ import { Button } from "@/components/ui/button";
 // In the navigation menu component, add a link to the admin page
 const NavigationMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, profile, signOut } = useAuth();
+  const {
+    user,
+    profile,
+    signOut
+  } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMobile();
-
   const isActive = (path: string) => {
     return location.pathname === path ? 'text-red-500' : 'hover:text-gray-300';
   };
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
   };
-
-  return (
-    <header className="bg-[#0f0f0f] text-white">
+  return <header className="bg-[#0f0f0f] text-white">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
           <Link to="/" className="text-2xl font-bold">AniClone</Link>
@@ -34,29 +33,22 @@ const NavigationMenu = () => {
           <nav className="hidden md:flex space-x-6 items-center">
             <Link to="/" className={isActive('/')}>Главная</Link>
             <Link to="/search" className={isActive('/search')}>Поиск</Link>
-            {user && (
-              <>
+            {user && <>
                 <Link to="/favorites" className={isActive('/favorites')}>Избранное</Link>
                 <Link to="/profile" className={isActive('/profile')}>Профиль</Link>
                 <Link to="/admin/import" className={isActive('/admin/import')}>Администрирование</Link>
-              </>
-            )}
+              </>}
             
-            {user ? (
-              <div className="flex items-center space-x-4">
+            {user ? <div className="flex items-center space-x-4">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={profile?.avatar_url} alt={profile?.username} />
                   <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
-                <Button variant="outline" size="sm" onClick={handleSignOut}>Выйти</Button>
-              </div>
-            ) : (
-              <Link to="/auth" className={isActive('/auth')}>Войти</Link>
-            )}
+                <Button variant="outline" size="sm" onClick={handleSignOut} className="text-zinc-950">Выйти</Button>
+              </div> : <Link to="/auth" className={isActive('/auth')}>Войти</Link>}
           </nav>
           
-          {isMobile && (
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+          {isMobile && <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-5 w-5" />
@@ -72,27 +64,18 @@ const NavigationMenu = () => {
                 <div className="mt-4 flex flex-col space-y-2">
                   <Link to="/" className={`block py-2 ${isActive('/')}`} onClick={() => setIsOpen(false)}>Главная</Link>
                   <Link to="/search" className={`block py-2 ${isActive('/search')}`} onClick={() => setIsOpen(false)}>Поиск</Link>
-                  {user && (
-                    <>
+                  {user && <>
                       <Link to="/favorites" className={`block py-2 ${isActive('/favorites')}`} onClick={() => setIsOpen(false)}>Избранное</Link>
                       <Link to="/profile" className={`block py-2 ${isActive('/profile')}`} onClick={() => setIsOpen(false)}>Профиль</Link>
                       <Link to="/admin/import" className={`block py-2 ${isActive('/admin/import')}`} onClick={() => setIsOpen(false)}>Администрирование</Link>
-                    </>
-                  )}
-                  {!user ? (
-                    <Link to="/auth" className={`block py-2 ${isActive('/auth')}`} onClick={() => setIsOpen(false)}>Войти</Link>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={handleSignOut}>Выйти</Button>
-                  )}
+                    </>}
+                  {!user ? <Link to="/auth" className={`block py-2 ${isActive('/auth')}`} onClick={() => setIsOpen(false)}>Войти</Link> : <Button variant="outline" size="sm" onClick={handleSignOut}>Выйти</Button>}
                 </div>
               </SheetContent>
-            </Sheet>
-          )}
+            </Sheet>}
         </div>
       </div>
       
-    </header>
-  );
+    </header>;
 };
-
 export default NavigationMenu;
