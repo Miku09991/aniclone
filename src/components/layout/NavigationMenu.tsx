@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 // In the navigation menu component, add a link to the admin page
 const NavigationMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useMobile();
@@ -44,8 +45,8 @@ const NavigationMenu = () => {
             {user ? (
               <div className="flex items-center space-x-4">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatar_url} alt={user.username} />
-                  <AvatarFallback>{user.username?.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src={profile?.avatar_url} alt={profile?.username} />
+                  <AvatarFallback>{profile?.username?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                 </Avatar>
                 <Button variant="outline" size="sm" onClick={handleSignOut}>Выйти</Button>
               </div>
