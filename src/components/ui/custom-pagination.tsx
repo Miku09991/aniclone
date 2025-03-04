@@ -20,7 +20,7 @@ const CustomPagination = ({
   totalPages,
   onPageChange,
 }: CustomPaginationProps) => {
-  // Generate an array of page numbers
+  // Generate an array of page numbers with ellipsis for large page counts
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;

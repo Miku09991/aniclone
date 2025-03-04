@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Anime } from "@/types/anime";
@@ -27,9 +28,7 @@ const Search = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -71,10 +70,7 @@ const Search = () => {
     setIsLoading(true);
     setIsSearching(false);
     try {
-      const {
-        data,
-        count
-      } = await getAnimeList(pageNumber, limit);
+      const { data, count } = await getAnimeList(pageNumber, limit);
       setSearchResults(data);
       setTotalAnime(count);
       setTotalPages(Math.ceil(count / limit));
@@ -142,7 +138,8 @@ const Search = () => {
     }
   };
 
-  return <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
+  return (
+    <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
       <NavigationMenu />
       <div className="container mx-auto px-4 py-8 flex-grow">
         <div className="mb-8">
@@ -151,7 +148,13 @@ const Search = () => {
           <form onSubmit={handleSubmit} className="flex items-center gap-2 mb-6">
             <div className="relative flex-grow">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <Input type="text" placeholder="Введите название аниме..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-[#1a1a1a] border-[#2a2a2a] focus-visible:ring-red-500 w-full" />
+              <Input 
+                type="text" 
+                placeholder="Введите название аниме..." 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+                className="pl-10 bg-[#1a1a1a] border-[#2a2a2a] focus-visible:ring-red-500 w-full" 
+              />
             </div>
             <Button type="submit" className="bg-red-500 hover:bg-red-600">
               Найти
@@ -163,7 +166,12 @@ const Search = () => {
               <span className="text-gray-400">
                 Найдено: {totalAnime}
               </span>
-              <Button variant="outline" onClick={handleImportMoreAnime} disabled={isLoading} className="border-[#2a2a2a] text-neutral-950">
+              <Button 
+                variant="outline" 
+                onClick={handleImportMoreAnime} 
+                disabled={isLoading}
+                className="border-[#2a2a2a] text-neutral-950"
+              >
                 Импортировать больше аниме
               </Button>
             </div>
@@ -175,24 +183,42 @@ const Search = () => {
           </div>
         </div>
         
-        {isLoading ? <div className="flex justify-center items-center min-h-[300px]">
+        {isLoading ? (
+          <div className="flex justify-center items-center min-h-[300px]">
             <LoadingSpinner />
-          </div> : <>
-            {searchResults.length > 0 ? <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {searchResults.map(anime => <Link to={`/anime/${anime.id}`} key={anime.id} className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#2a2a2a] hover:border-red-500 transition-colors">
+          </div>
+        ) : (
+          <>
+            {searchResults.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {searchResults.map(anime => (
+                  <Link 
+                    to={`/anime/${anime.id}`} 
+                    key={anime.id} 
+                    className="bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#2a2a2a] hover:border-red-500 transition-colors"
+                  >
                     <div className="relative">
                       <AspectRatio ratio={3 / 4}>
-                        <img src={anime.image || "/placeholder.svg"} alt={anime.title} className="object-cover w-full h-full" onError={e => {
-                  (e.target as HTMLImageElement).src = "/placeholder.svg";
-                }} />
+                        <img 
+                          src={anime.image || "/placeholder.svg"} 
+                          alt={anime.title} 
+                          className="object-cover w-full h-full" 
+                          onError={e => {
+                            (e.target as HTMLImageElement).src = "/placeholder.svg";
+                          }}
+                        />
                       </AspectRatio>
-                      {anime.rating > 0 && <div className="absolute top-2 right-2 flex items-center space-x-1 bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">
+                      {anime.rating > 0 && (
+                        <div className="absolute top-2 right-2 flex items-center space-x-1 bg-black bg-opacity-70 text-white text-xs px-1.5 py-0.5 rounded">
                           <Star size={12} className="text-yellow-400 fill-yellow-400" />
                           <span>{anime.rating.toFixed(1)}</span>
-                        </div>}
-                      {anime.video_url && <Badge className="absolute top-2 left-2 bg-red-500">
+                        </div>
+                      )}
+                      {anime.video_url && (
+                        <Badge className="absolute top-2 left-2 bg-red-500">
                           Видео
-                        </Badge>}
+                        </Badge>
+                      )}
                     </div>
                     <div className="p-3">
                       <h3 className="text-sm font-medium mb-1 line-clamp-1 hover:text-red-500 transition-colors">
@@ -203,8 +229,11 @@ const Search = () => {
                         <span>{anime.year || "N/A"}</span>
                       </div>
                     </div>
-                  </Link>)}
-              </div> : <div className="flex flex-col items-center justify-center min-h-[300px] bg-[#1a1a1a] rounded-lg p-8">
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center min-h-[300px] bg-[#1a1a1a] rounded-lg p-8">
                 <h3 className="text-xl font-semibold mb-2">Ничего не найдено</h3>
                 <p className="text-gray-400 text-center mb-4">
                   {searchQuery ? `По запросу "${searchQuery}" ничего не найдено` : "В базе данных пока нет аниме"}
@@ -212,15 +241,24 @@ const Search = () => {
                 <Button onClick={handleImportMoreAnime} className="bg-red-500 hover:bg-red-600">
                   Импортировать аниме
                 </Button>
-              </div>}
+              </div>
+            )}
             
-            {!isSearching && totalPages > 1 && <div className="mt-8 flex justify-center">
-                <CustomPagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
-              </div>}
-          </>}
+            {!isSearching && totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <CustomPagination 
+                  currentPage={page} 
+                  totalPages={totalPages} 
+                  onPageChange={handlePageChange} 
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
       <Footer />
-    </div>;
+    </div>
+  );
 };
 
 export default Search;

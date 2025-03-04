@@ -198,7 +198,7 @@ const WatchAnime = () => {
         </div>
         
         <div className="mb-8">
-          <VideoPlayer videoUrl={anime.video_url} title={anime.title} />
+          <VideoPlayer videoUrl={anime.video_url} title={anime.title} animeId={anime.id} />
         </div>
         
         <div className="bg-[#1a1a1a] rounded-lg p-6">
