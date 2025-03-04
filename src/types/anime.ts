@@ -11,4 +11,11 @@ export interface Anime {
   newEpisodes?: number;
   status?: string;
   video_url?: string;
+  episodes_data?: AnimeEpisode[];
+}
+
+export interface AnimeEpisode {
+  number: number;
+  title: string;
+  video_url: string;
 }

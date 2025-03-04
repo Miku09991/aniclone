@@ -4,14 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX, Maximize, SkipForward, SkipBack, Loader2 } from "lucide-react";
 import { fetchSampleVideoForAnime } from "@/lib/api/animeImport";
 import { toast } from "@/components/ui/use-toast";
+import { AnimeEpisode } from "@/types/anime";
 
 interface VideoPlayerProps {
   videoUrl: string;
   title: string;
   animeId?: number;
+  episodes?: AnimeEpisode[];
+  onEpisodeChange?: (episode: AnimeEpisode) => void;
+  currentEpisode?: AnimeEpisode;
 }
 
-const VideoPlayer = ({ videoUrl, title, animeId }: VideoPlayerProps) => {
+const VideoPlayer = ({ 
+  videoUrl, 
+  title, 
+  animeId, 
+  episodes = [], 
+  onEpisodeChange,
+  currentEpisode
+}: VideoPlayerProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -22,6 +33,7 @@ const VideoPlayer = ({ videoUrl, title, animeId }: VideoPlayerProps) => {
   const [isControlsVisible, setIsControlsVisible] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [videoSource, setVideoSource] = useState(videoUrl);
+  const [showEpisodeSelector, setShowEpisodeSelector] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const playerRef = useRef<HTMLDivElement | null>(null);
@@ -122,6 +134,14 @@ const VideoPlayer = ({ videoUrl, title, animeId }: VideoPlayerProps) => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
     }
+  };
+
+  // Change episode
+  const changeEpisode = (episode: AnimeEpisode) => {
+    if (onEpisodeChange) {
+      onEpisodeChange(episode);
+    }
+    setShowEpisodeSelector(false);
   };
 
   // Try to fetch a sample video if this anime doesn't have one
@@ -225,132 +245,183 @@ const VideoPlayer = ({ videoUrl, title, animeId }: VideoPlayerProps) => {
   }
 
   return (
-    <div 
-      ref={playerRef}
-      className="relative w-full bg-black rounded-lg overflow-hidden group"
-    >
-      <video
-        ref={videoRef}
-        className="w-full h-full"
-        src={videoSource}
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        onClick={togglePlay}
-        playsInline
-      />
-      
-      {/* Элементы управления */}
+    <div className="space-y-2">
       <div 
-        className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 flex flex-col justify-between p-4 transition-opacity duration-300 ${isControlsVisible ? 'opacity-100' : 'opacity-0'}`}
+        ref={playerRef}
+        className="relative w-full bg-black rounded-lg overflow-hidden group"
       >
-        {/* Верхняя панель */}
-        <div className="flex justify-between items-center">
-          <h3 className="text-white text-lg font-medium truncate pr-4">{title}</h3>
-        </div>
+        <video
+          ref={videoRef}
+          className="w-full h-full"
+          src={videoSource}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onClick={togglePlay}
+          playsInline
+        />
         
-        {/* Центральная кнопка воспроизведения/паузы */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="bg-white/20 hover:bg-white/30 rounded-full w-16 h-16 pointer-events-auto"
-            onClick={togglePlay}
-          >
-            {isPlaying ? (
-              <Pause className="h-8 w-8 text-white" />
-            ) : (
-              <Play className="h-8 w-8 text-white ml-1" />
-            )}
-          </Button>
-        </div>
-        
-        {/* Нижняя панель */}
-        <div className="space-y-2">
-          {/* Прогресс видео */}
-          <div className="flex items-center space-x-2">
-            <span className="text-white text-xs">{formatTime(currentTime)}</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={progress}
-              onChange={handleProgressChange}
-              className="flex-grow h-1 bg-gray-600 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-500"
-            />
-            <span className="text-white text-xs">{formatTime(duration)}</span>
+        {/* Элементы управления */}
+        <div 
+          className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 flex flex-col justify-between p-4 transition-opacity duration-300 ${isControlsVisible ? 'opacity-100' : 'opacity-0'}`}
+        >
+          {/* Верхняя панель */}
+          <div className="flex justify-between items-center">
+            <h3 className="text-white text-lg font-medium truncate pr-4">
+              {title} {currentEpisode ? `- Эпизод ${currentEpisode.number}` : ''}
+            </h3>
           </div>
           
-          {/* Кнопки управления */}
-          <div className="flex justify-between items-center">
+          {/* Центральная кнопка воспроизведения/паузы */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="bg-white/20 hover:bg-white/30 rounded-full w-16 h-16 pointer-events-auto"
+              onClick={togglePlay}
+            >
+              {isPlaying ? (
+                <Pause className="h-8 w-8 text-white" />
+              ) : (
+                <Play className="h-8 w-8 text-white ml-1" />
+              )}
+            </Button>
+          </div>
+          
+          {/* Нижняя панель */}
+          <div className="space-y-2">
+            {/* Прогресс видео */}
             <div className="flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/20 rounded-full"
-                onClick={togglePlay}
-              >
-                {isPlaying ? (
-                  <Pause className="h-5 w-5" />
-                ) : (
-                  <Play className="h-5 w-5 ml-0.5" />
-                )}
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/20 rounded-full"
-                onClick={skipBackward}
-              >
-                <SkipBack className="h-5 w-5" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="text-white hover:bg-white/20 rounded-full"
-                onClick={skipForward}
-              >
-                <SkipForward className="h-5 w-5" />
-              </Button>
-              
-              <div className="flex items-center space-x-1">
+              <span className="text-white text-xs">{formatTime(currentTime)}</span>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={progress}
+                onChange={handleProgressChange}
+                className="flex-grow h-1 bg-gray-600 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-red-500"
+              />
+              <span className="text-white text-xs">{formatTime(duration)}</span>
+            </div>
+            
+            {/* Кнопки управления */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
                 <Button 
                   variant="ghost" 
                   size="icon" 
                   className="text-white hover:bg-white/20 rounded-full"
-                  onClick={toggleMute}
+                  onClick={togglePlay}
                 >
-                  {isMuted ? (
-                    <VolumeX className="h-5 w-5" />
+                  {isPlaying ? (
+                    <Pause className="h-5 w-5" />
                   ) : (
-                    <Volume2 className="h-5 w-5" />
+                    <Play className="h-5 w-5 ml-0.5" />
                   )}
                 </Button>
                 
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={isMuted ? 0 : volume}
-                  onChange={handleVolumeChange}
-                  className="w-16 h-1 bg-gray-600 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
-                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-white hover:bg-white/20 rounded-full"
+                  onClick={skipBackward}
+                >
+                  <SkipBack className="h-5 w-5" />
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-white hover:bg-white/20 rounded-full"
+                  onClick={skipForward}
+                >
+                  <SkipForward className="h-5 w-5" />
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-white hover:bg-white/20 rounded-full"
+                    onClick={toggleMute}
+                  >
+                    {isMuted ? (
+                      <VolumeX className="h-5 w-5" />
+                    ) : (
+                      <Volume2 className="h-5 w-5" />
+                    )}
+                  </Button>
+                  
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    className="w-16 h-1 bg-gray-600 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-2 [&::-webkit-slider-thumb]:w-2 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                  />
+                </div>
               </div>
+              
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-white/20 rounded-full"
+                onClick={toggleFullscreen}
+              >
+                <Maximize className="h-5 w-5" />
+              </Button>
             </div>
-            
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-white/20 rounded-full"
-              onClick={toggleFullscreen}
-            >
-              <Maximize className="h-5 w-5" />
-            </Button>
           </div>
         </div>
       </div>
+      
+      {/* Episode selector */}
+      {episodes && episodes.length > 0 && (
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            onClick={() => setShowEpisodeSelector(!showEpisodeSelector)}
+            className="w-full flex justify-between items-center"
+          >
+            <span>
+              {currentEpisode ? `Эпизод ${currentEpisode.number}: ${currentEpisode.title}` : 'Выбрать эпизод'}
+            </span>
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="20" 
+              height="20" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+              className={`transition-transform ${showEpisodeSelector ? 'rotate-180' : ''}`}
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </Button>
+          
+          {showEpisodeSelector && (
+            <div className="bg-gray-800 rounded-md mt-2 p-2 max-h-64 overflow-y-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {episodes.map((episode) => (
+                  <Button
+                    key={episode.number}
+                    variant={currentEpisode?.number === episode.number ? "default" : "outline"}
+                    size="sm"
+                    className="justify-start"
+                    onClick={() => changeEpisode(episode)}
+                  >
+                    Эпизод {episode.number}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

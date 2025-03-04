@@ -7,7 +7,7 @@ import VideoPlayer from "@/components/anime/VideoPlayer";
 import NavigationMenu from "@/components/layout/NavigationMenu";
 import Footer from "@/components/layout/Footer";
 import { getAnimeById, toggleFavorite, isFavorite } from "@/lib/supabase";
-import { Anime } from "@/types/anime";
+import { Anime, AnimeEpisode } from "@/types/anime";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import LoadingSpinner from "@/components/home/LoadingSpinner";
@@ -15,6 +15,8 @@ import LoadingSpinner from "@/components/home/LoadingSpinner";
 const WatchAnime = () => {
   const { id } = useParams<{ id: string }>();
   const [anime, setAnime] = useState<Anime | null>(null);
+  const [episodes, setEpisodes] = useState<AnimeEpisode[]>([]);
+  const [currentEpisode, setCurrentEpisode] = useState<AnimeEpisode | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorited, setIsFavorited] = useState(false);
   const { toast } = useToast();
@@ -51,7 +53,44 @@ const WatchAnime = () => {
         
         setAnime(animeData);
         
-        // Проверяем, добавлено ли аниме в избранное
+        // Parse episodes data if available
+        if (animeData.episodes_data && typeof animeData.episodes_data === 'string') {
+          try {
+            const parsedEpisodes = JSON.parse(animeData.episodes_data as string) as AnimeEpisode[];
+            setEpisodes(parsedEpisodes);
+            // Set first episode as current
+            if (parsedEpisodes.length > 0) {
+              setCurrentEpisode(parsedEpisodes[0]);
+            }
+          } catch (error) {
+            console.error("Error parsing episodes data:", error);
+            // Create a default episode with the main video
+            const defaultEpisode: AnimeEpisode = {
+              number: 1,
+              title: "Эпизод 1",
+              video_url: animeData.video_url
+            };
+            setEpisodes([defaultEpisode]);
+            setCurrentEpisode(defaultEpisode);
+          }
+        } else if (animeData.episodes_data && Array.isArray(animeData.episodes_data)) {
+          // If it's already an array
+          setEpisodes(animeData.episodes_data as AnimeEpisode[]);
+          if (animeData.episodes_data.length > 0) {
+            setCurrentEpisode(animeData.episodes_data[0]);
+          }
+        } else {
+          // If no episodes data, create a default episode with the main video
+          const defaultEpisode: AnimeEpisode = {
+            number: 1,
+            title: "Эпизод 1",
+            video_url: animeData.video_url
+          };
+          setEpisodes([defaultEpisode]);
+          setCurrentEpisode(defaultEpisode);
+        }
+        
+        // Check if anime is in favorites
         if (user) {
           const favorite = await isFavorite(animeData.id);
           setIsFavorited(favorite);
@@ -104,6 +143,10 @@ const WatchAnime = () => {
     }
   };
 
+  const handleEpisodeChange = (episode: AnimeEpisode) => {
+    setCurrentEpisode(episode);
+  };
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -134,7 +177,7 @@ const WatchAnime = () => {
     );
   }
 
-  if (!anime || !anime.video_url) {
+  if (!anime || (!anime.video_url && !currentEpisode)) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
         <NavigationMenu />
@@ -198,7 +241,14 @@ const WatchAnime = () => {
         </div>
         
         <div className="mb-8">
-          <VideoPlayer videoUrl={anime.video_url} title={anime.title} animeId={anime.id} />
+          <VideoPlayer 
+            videoUrl={currentEpisode?.video_url || anime.video_url || ''} 
+            title={anime.title} 
+            animeId={anime.id}
+            episodes={episodes}
+            onEpisodeChange={handleEpisodeChange}
+            currentEpisode={currentEpisode || undefined}
+          />
         </div>
         
         <div className="bg-[#1a1a1a] rounded-lg p-6">

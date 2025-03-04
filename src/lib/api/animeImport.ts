@@ -121,3 +121,24 @@ export async function performFullAnimeImport() {
     return { success: false, message: 'Не удалось выполнить полный импорт аниме' };
   }
 }
+
+/**
+ * Imports all anime with episodes and videos from various sources
+ */
+export async function importAllAnimeWithEpisodes() {
+  try {
+    console.log('Calling import-all-anime function...');
+    const { data, error } = await supabase.functions.invoke('import-all-anime');
+    
+    if (error) {
+      console.error('Error importing all anime with episodes:', error);
+      return { success: false, message: error.message };
+    }
+    
+    console.log('All anime import result:', data);
+    return data;
+  } catch (err) {
+    console.error('Error calling import-all-anime function:', err);
+    return { success: false, message: 'Не удалось импортировать все аниме с эпизодами' };
+  }
+}

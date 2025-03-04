@@ -1,171 +1,96 @@
-
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, LogIn, LogOut, Menu, X, Home, Calendar, List, Info } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useMobile } from "@/hooks/useMobile";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
+// In the navigation menu component, add a link to the admin page
 const NavigationMenu = () => {
+  const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
+  const location = useLocation();
+  const isMobile = useMobile();
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim().length >= 3) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
-    }
+  const isActive = (path: string) => {
+    return location.pathname === path ? 'text-red-500' : 'hover:text-gray-300';
   };
 
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     await signOut();
-    navigate("/");
+    navigate('/auth');
   };
-
-  const menuItems = [
-    { title: "Главная", icon: Home, path: "/" },
-    { title: "Релизы", icon: List, path: "/releases" },
-    { title: "Расписание", icon: Calendar, path: "/schedule" },
-    { title: "Избранное", icon: Heart, path: "/favorites" },
-    { title: "О проекте", icon: Info, path: "/about" },
-  ];
 
   return (
-    <nav className="bg-[#0f0f0f] border-b border-[#2a2a2a] py-4">
-      <div className="container mx-auto px-4">
+    <header className="bg-[#0f0f0f] text-white">
+      <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <Link to="/" className="text-xl font-bold text-red-500 mr-8">
-              AniClone
-            </Link>
-            
-            <div className="hidden md:flex space-x-6">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className="text-gray-300 hover:text-white transition-colors flex items-center"
-                >
-                  <item.icon size={16} className="mr-1" />
-                  {item.title}
-                </Link>
-              ))}
-            </div>
-          </div>
+          <Link to="/" className="text-2xl font-bold">AniClone</Link>
           
-          <div className="hidden md:flex items-center space-x-4">
-            <form onSubmit={handleSearch} className="relative">
-              <Input
-                type="text"
-                placeholder="Поиск аниме..."
-                className="bg-[#1a1a1a] border-[#2a2a2a] w-[200px] pr-8"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                icon={<Search size={16} className="text-gray-400" />}
-                iconPosition="right"
-              />
-            </form>
+          <nav className="hidden md:flex space-x-6 items-center">
+            <Link to="/" className={isActive('/')}>Главная</Link>
+            <Link to="/search" className={isActive('/search')}>Поиск</Link>
+            {user && (
+              <>
+                <Link to="/favorites" className={isActive('/favorites')}>Избранное</Link>
+                <Link to="/profile" className={isActive('/profile')}>Профиль</Link>
+                <Link to="/admin/import" className={isActive('/admin/import')}>Администрирование</Link>
+              </>
+            )}
             
             {user ? (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/profile" className="text-gray-300 hover:text-white">
-                    Профиль
-                  </Link>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-gray-300 hover:text-white"
-                >
-                  <LogOut size={16} className="mr-1" />
-                  Выйти
-                </Button>
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.avatar_url} alt={user.username} />
+                  <AvatarFallback>{user.username?.charAt(0).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <Button variant="outline" size="sm" onClick={handleSignOut}>Выйти</Button>
               </div>
             ) : (
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/auth" className="text-gray-300 hover:text-white">
-                  <LogIn size={16} className="mr-1" />
-                  Войти
-                </Link>
-              </Button>
+              <Link to="/auth" className={isActive('/auth')}>Войти</Link>
             )}
-          </div>
+          </nav>
           
-          {/* Mobile Menu */}
-          <div className="md:hidden flex items-center">
-            <Sheet>
+          {isMobile && (
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-gray-300">
-                  <Menu size={24} />
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="bg-[#121212] border-r border-[#2a2a2a]">
-                <div className="flex flex-col h-full">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-red-500">AniClone</h2>
-                  </div>
-                  
-                  <form onSubmit={handleSearch} className="mb-6">
-                    <Input
-                      type="text"
-                      placeholder="Поиск аниме..."
-                      className="bg-[#1a1a1a] border-[#2a2a2a] w-full"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      icon={<Search size={16} className="text-gray-400" />}
-                      iconPosition="right"
-                    />
-                  </form>
-                  
-                  <div className="space-y-4">
-                    {menuItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className="block py-2 text-gray-300 hover:text-red-500 transition-colors flex items-center"
-                      >
-                        <item.icon size={20} className="mr-2" />
-                        {item.title}
-                      </Link>
-                    ))}
-                    
-                    {user ? (
-                      <>
-                        <Link
-                          to="/profile"
-                          className="block py-2 text-gray-300 hover:text-red-500 transition-colors flex items-center"
-                        >
-                          Профиль пользователя
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="block w-full text-left py-2 text-red-500 hover:text-red-400 transition-colors flex items-center"
-                        >
-                          <LogOut size={20} className="mr-2" />
-                          Выйти
-                        </button>
-                      </>
-                    ) : (
-                      <Link
-                        to="/auth"
-                        className="block py-2 text-gray-300 hover:text-red-500 transition-colors flex items-center"
-                      >
-                        <LogIn size={20} className="mr-2" />
-                        Вход / Регистрация
-                      </Link>
-                    )}
-                  </div>
+              <SheetContent side="right" className="bg-[#0f0f0f] text-white w-64">
+                <SheetHeader>
+                  <SheetTitle>Меню</SheetTitle>
+                  <SheetDescription>
+                    Навигация по сайту
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-4 flex flex-col space-y-2">
+                  <Link to="/" className={`block py-2 ${isActive('/')}`} onClick={() => setIsOpen(false)}>Главная</Link>
+                  <Link to="/search" className={`block py-2 ${isActive('/search')}`} onClick={() => setIsOpen(false)}>Поиск</Link>
+                  {user && (
+                    <>
+                      <Link to="/favorites" className={`block py-2 ${isActive('/favorites')}`} onClick={() => setIsOpen(false)}>Избранное</Link>
+                      <Link to="/profile" className={`block py-2 ${isActive('/profile')}`} onClick={() => setIsOpen(false)}>Профиль</Link>
+                      <Link to="/admin/import" className={`block py-2 ${isActive('/admin/import')}`} onClick={() => setIsOpen(false)}>Администрирование</Link>
+                    </>
+                  )}
+                  {!user ? (
+                    <Link to="/auth" className={`block py-2 ${isActive('/auth')}`} onClick={() => setIsOpen(false)}>Войти</Link>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={handleSignOut}>Выйти</Button>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
-          </div>
+          )}
         </div>
       </div>
-    </nav>
+      
+    </header>
   );
 };
 
