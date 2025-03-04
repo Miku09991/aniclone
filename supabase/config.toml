@@ -1,4 +1,5 @@
 
+
 # A string used to distinguish different Supabase projects on the same host. Defaults to the project ID.
 project_id = "tkrmpskyskudhvvyhgqd"
 
@@ -102,3 +103,4 @@ gcp_jwt_path = ""
 [functions]
 # Port for the Functions service.
 port = 54321
+

@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
-import { Pagination } from "@/components/ui/pagination";
 import NavigationMenu from "@/components/layout/NavigationMenu";
 import Footer from "@/components/layout/Footer";
 import { Search as SearchIcon, Filter, Star } from "lucide-react";
 import LoadingSpinner from "@/components/home/LoadingSpinner";
 import { Link } from "react-router-dom";
 import { performFullAnimeImport } from "@/lib/api/animeImport";
+import CustomPagination from "@/components/ui/custom-pagination";
+
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Anime[]>([]);
@@ -30,7 +31,6 @@ const Search = () => {
     toast
   } = useToast();
 
-  // Extract search query from URL parameters
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queryParam = params.get("q");
@@ -38,12 +38,10 @@ const Search = () => {
       setSearchQuery(queryParam);
       handleSearch(queryParam);
     } else {
-      // If no search query, load the first page of all anime
       loadAllAnime(1);
     }
   }, [location.search]);
 
-  // Function to handle search
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
       loadAllAnime(1);
@@ -55,7 +53,7 @@ const Search = () => {
       const results = await searchAnime(query);
       setSearchResults(results);
       setTotalAnime(results.length);
-      setTotalPages(1); // Search results are not paginated by the API
+      setTotalPages(1);
       setPage(1);
     } catch (error) {
       console.error("Error searching anime:", error);
@@ -69,7 +67,6 @@ const Search = () => {
     }
   };
 
-  // Function to load all anime with pagination
   const loadAllAnime = async (pageNumber: number) => {
     setIsLoading(true);
     setIsSearching(false);
@@ -94,26 +91,20 @@ const Search = () => {
     }
   };
 
-  // Function to handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Update URL with search query
     navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
     handleSearch(searchQuery);
   };
 
-  // Function to handle page change
   const handlePageChange = (newPage: number) => {
     if (isSearching) {
-      // If we're searching, we don't need to load a new page
       return;
     }
     window.scrollTo(0, 0);
     loadAllAnime(newPage);
   };
 
-  // Function to import more anime from DatabaseAnime
   const handleImportMoreAnime = async () => {
     setIsLoading(true);
     toast({
@@ -127,7 +118,6 @@ const Search = () => {
           title: "Импорт завершен",
           description: result.message
         });
-        // Reload the current page
         if (isSearching) {
           handleSearch(searchQuery);
         } else {
@@ -151,6 +141,7 @@ const Search = () => {
       setIsLoading(false);
     }
   };
+
   return <div className="min-h-screen bg-[#0f0f0f] text-white flex flex-col">
       <NavigationMenu />
       <div className="container mx-auto px-4 py-8 flex-grow">
@@ -224,11 +215,12 @@ const Search = () => {
               </div>}
             
             {!isSearching && totalPages > 1 && <div className="mt-8 flex justify-center">
-                <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
+                <CustomPagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
               </div>}
           </>}
       </div>
       <Footer />
     </div>;
 };
+
 export default Search;
