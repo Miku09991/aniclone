@@ -1,8 +1,6 @@
 
 project_id = "tkrmpskyskudhvvyhgqd"
 
-[functions]
-
 [functions.import-anilibria]
 verify_jwt = false
 
