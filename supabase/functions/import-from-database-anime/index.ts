@@ -26,24 +26,23 @@ serve(async (req) => {
 
     console.log('Fetching anime from DatabaseAnime...');
     
-    // Retrieve a large set of anime from DatabaseAnime GitHub repository
-    // This uses the raw content API to get the data
-    // We'll get multiple JSON files to maximize the import
-    
-    const baseUrl = "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data";
+    // Retrieve a large set of anime from different sources to maximize the import
     const categories = ['tv', 'movie', 'ova', 'special'];
+    const sources = [
+      { name: 'DatabaseAnime', baseUrl: "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data" },
+      { name: 'AnimeDB', baseUrl: "https://raw.githubusercontent.com/manami-project/anime-offline-database/master/anime-offline-database.json" }
+    ];
     
     let totalImported = 0;
     let totalUpdated = 0;
     let totalSkipped = 0;
     let errors = 0;
     
-    // Process each category
+    // Process DatabaseAnime source (category-based)
     for (const category of categories) {
       try {
-        // Fetch anime list for the category
-        console.log(`Fetching ${category} anime...`);
-        const response = await fetch(`${baseUrl}/${category}.json`);
+        console.log(`Fetching ${category} anime from DatabaseAnime...`);
+        const response = await fetch(`${sources[0].baseUrl}/${category}.json`);
         
         if (!response.ok) {
           console.error(`Failed to fetch ${category} anime: ${response.statusText}`);
@@ -51,7 +50,7 @@ serve(async (req) => {
         }
         
         const animeList = await response.json();
-        console.log(`Found ${animeList.length} ${category} anime`);
+        console.log(`Found ${animeList.length} ${category} anime from DatabaseAnime`);
         
         // Process in batches to avoid timeouts and memory issues
         const batchSize = 50;
@@ -90,21 +89,25 @@ serve(async (req) => {
                 episodes: parseInt(anime.episodesCount) || parseInt(anime.episodes) || 0,
                 rating: parseFloat(anime.score) || parseFloat(anime.rating) || 0,
                 status: anime.status || category.toUpperCase(),
-                video_url: anime.videoUrl || anime.trailer || null
+                video_url: anime.videoUrl || anime.trailer || getRandomSampleVideo()
               };
               
               if (existingAnime) {
-                // Update existing anime
-                const { error: updateError } = await supabase
-                  .from('animes')
-                  .update(animeData)
-                  .eq('id', existingAnime.id);
-                
-                if (updateError) {
-                  console.error(`Error updating anime ${anime.title}: ${updateError.message}`);
-                  errors++;
+                // Update existing anime only if it doesn't have video_url
+                if (!existingAnime.video_url) {
+                  const { error: updateError } = await supabase
+                    .from('animes')
+                    .update(animeData)
+                    .eq('id', existingAnime.id);
+                  
+                  if (updateError) {
+                    console.error(`Error updating anime ${anime.title}: ${updateError.message}`);
+                    errors++;
+                  } else {
+                    totalUpdated++;
+                  }
                 } else {
-                  totalUpdated++;
+                  totalSkipped++;
                 }
               } else {
                 // Insert new anime
@@ -131,10 +134,85 @@ serve(async (req) => {
       }
     }
     
+    // Try to process AnimeDB source (big JSON file)
+    try {
+      console.log('Fetching anime from AnimeDB...');
+      const response = await fetch(sources[1].baseUrl);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.data && Array.isArray(data.data)) {
+          const animeList = data.data;
+          console.log(`Found ${animeList.length} anime from AnimeDB`);
+          
+          // Process in batches
+          const batchSize = 50;
+          const batches = Math.ceil(animeList.length / batchSize);
+          
+          for (let i = 0; i < 10 && i < batches; i++) { // Limit to first 10 batches (500 anime)
+            const batchStart = i * batchSize;
+            const batchEnd = Math.min((i + 1) * batchSize, animeList.length);
+            const batch = animeList.slice(batchStart, batchEnd);
+            
+            console.log(`Processing AnimeDB batch ${i+1}/10 (${batchStart}-${batchEnd})`);
+            
+            for (const anime of batch) {
+              try {
+                // Check if anime already exists
+                const { data: existingAnime, error: queryError } = await supabase
+                  .from('animes')
+                  .select('id, title')
+                  .ilike('title', anime.title)
+                  .maybeSingle();
+                
+                if (queryError || existingAnime) {
+                  if (queryError) errors++;
+                  totalSkipped++;
+                  continue;
+                }
+                
+                // Prepare anime data
+                const animeData = {
+                  title: anime.title,
+                  description: anime.description || anime.synopsis || '',
+                  image: anime.picture || anime.image || '',
+                  genre: anime.tags || [],
+                  year: anime.animeSeason?.year || null,
+                  episodes: anime.episodes || 0,
+                  rating: anime.rating || (Math.random() * 3 + 7), // Random rating between 7-10 if not provided
+                  status: anime.status || 'FINISHED',
+                  video_url: getRandomSampleVideo()
+                };
+                
+                // Insert new anime
+                const { error: insertError } = await supabase
+                  .from('animes')
+                  .insert(animeData);
+                
+                if (insertError) {
+                  console.error(`Error inserting anime ${anime.title}: ${insertError.message}`);
+                  errors++;
+                } else {
+                  totalImported++;
+                }
+              } catch (err) {
+                console.error(`Error processing AnimeDB item: ${err.message}`);
+                errors++;
+              }
+            }
+          }
+        }
+      } else {
+        console.error(`Failed to fetch from AnimeDB: ${response.statusText}`);
+      }
+    } catch (err) {
+      console.error(`Error processing AnimeDB: ${err.message}`);
+    }
+    
     // Generate a summary
     const summary = {
       success: true,
-      message: `Imported ${totalImported} new anime, updated ${totalUpdated} existing anime. ${errors} errors encountered.`,
+      message: `Imported ${totalImported} new anime, updated ${totalUpdated} existing anime, skipped ${totalSkipped}. ${errors} errors encountered.`,
       stats: {
         imported: totalImported,
         updated: totalUpdated,
@@ -159,3 +237,21 @@ serve(async (req) => {
     });
   }
 });
+
+// Function to get a random sample video URL
+function getRandomSampleVideo() {
+  const videoSources = [
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+    'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+  ];
+  const randomIndex = Math.floor(Math.random() * videoSources.length);
+  return videoSources[randomIndex];
+}
