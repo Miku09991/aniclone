@@ -118,7 +118,7 @@ async function processAnimeWithEpisodes(animeData: any[]) {
         rating: anime.score || Math.floor(Math.random() * 3) + 7,
         status: anime.status || "Онгоинг",
         video_url: getRandomVideo(),
-        episodes_data: JSON.stringify(processedEpisodes)
+        episodes_data: processedEpisodes // Changed from JSON.stringify to directly use the object
       };
       
       processedAnime.push(processedAnimeItem);

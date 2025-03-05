@@ -14,6 +14,7 @@ export type Database = {
           created_at: string
           description: string | null
           episodes: number | null
+          episodes_data: Json | null
           genre: string[] | null
           id: number
           image: string | null
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           episodes?: number | null
+          episodes_data?: Json | null
           genre?: string[] | null
           id?: number
           image?: string | null
@@ -40,6 +42,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           episodes?: number | null
+          episodes_data?: Json | null
           genre?: string[] | null
           id?: number
           image?: string | null
