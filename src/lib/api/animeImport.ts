@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -129,11 +128,8 @@ export async function importAllAnimeWithEpisodes() {
   try {
     console.log('Calling import-all-anime function...');
     const { data, error } = await supabase.functions.invoke('import-all-anime', {
-      // Add a 60-second timeout for the function call
-      options: { 
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      headers: {
+        'Content-Type': 'application/json'
       }
     });
     
