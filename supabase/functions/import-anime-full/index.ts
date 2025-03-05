@@ -75,7 +75,7 @@ async function fetchAnimeEpisodes(animeId: number) {
 }
 
 // Process anime and create episode data
-async function processAnimeWithEpisodes(animeData: any[], supabase: any) {
+async function processAnimeWithEpisodes(animeData: any[]) {
   const processedAnime = [];
   
   for (const anime of animeData) {
@@ -155,35 +155,68 @@ serve(async (req) => {
     const animeData = await fetchAnimeData(limit, offset);
     
     if (!animeData || animeData.length === 0) {
-      throw new Error("No anime data received from API");
+      console.log("No anime data received from API");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Не удалось получить данные из API",
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 // Return 200 status even for business logic errors
+        }
+      );
     }
     
     console.log(`Processing ${animeData.length} anime with episodes...`);
     
     // Process anime data with episodes
-    const processedAnime = await processAnimeWithEpisodes(animeData, supabase);
+    const processedAnime = await processAnimeWithEpisodes(animeData);
     
     console.log(`Prepared ${processedAnime.length} anime for import`);
     
     // Insert data into database
     if (processedAnime.length > 0) {
-      const { error: insertError } = await supabase
-        .from('animes')
-        .upsert(processedAnime, {
-          onConflict: 'id',
-          ignoreDuplicates: false
-        });
-      
-      if (insertError) {
-        console.error('Error inserting anime data:', insertError);
-        throw new Error(`Failed to insert anime data: ${insertError.message}`);
+      try {
+        const { error: insertError } = await supabase
+          .from('animes')
+          .upsert(processedAnime, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          });
+        
+        if (insertError) {
+          console.error('Error inserting anime data:', insertError);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: `Ошибка при добавлении данных в базу: ${insertError.message}`,
+            }),
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 200 // Return 200 even for database errors
+            }
+          );
+        }
+      } catch (dbError) {
+        console.error('Database operation error:', dbError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Ошибка базы данных: ${dbError.message || 'Неизвестная ошибка'}`,
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+          }
+        );
       }
     }
     
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully imported ${processedAnime.length} anime with episodes`,
+        message: `Успешно импортировано ${processedAnime.length} аниме с эпизодами`,
         count: processedAnime.length,
         nextOffset: offset + limit
       }),
@@ -195,14 +228,15 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in import-anime-full function:', error);
     
+    // Always return a 200 status code with error details in the response body
     return new Response(
       JSON.stringify({
         success: false,
-        message: error.message || 'An unexpected error occurred',
+        message: error.message || 'Произошла непредвиденная ошибка',
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
+        status: 200
       }
     );
   }
