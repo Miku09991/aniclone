@@ -144,10 +144,12 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Get request params
+    // Get request params from URL
     const url = new URL(req.url);
     const limit = parseInt(url.searchParams.get('limit') || '50');
     const offset = parseInt(url.searchParams.get('offset') || '0');
+    
+    console.log(`Processing request with limit=${limit}, offset=${offset}`);
     
     // Fetch anime data
     const animeData = await fetchAnimeData(limit, offset);

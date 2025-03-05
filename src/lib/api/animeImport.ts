@@ -161,11 +161,12 @@ export async function importAllAnimeWithEpisodes() {
 export async function importAnimeWithEpisodesFromSources(limit = 50, offset = 0) {
   try {
     console.log(`Calling import-anime-full function with limit=${limit}, offset=${offset}...`);
-    const { data, error } = await supabase.functions.invoke('import-anime-full', {
+    
+    // Fix: Pass query parameters in the URL instead of using 'params' property
+    const { data, error } = await supabase.functions.invoke(`import-anime-full?limit=${limit}&offset=${offset}`, {
       headers: {
         'Content-Type': 'application/json'
-      },
-      params: { limit, offset }
+      }
     });
     
     if (error) {
