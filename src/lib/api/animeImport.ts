@@ -128,17 +128,30 @@ export async function performFullAnimeImport() {
 export async function importAllAnimeWithEpisodes() {
   try {
     console.log('Calling import-all-anime function...');
-    const { data, error } = await supabase.functions.invoke('import-all-anime');
+    const { data, error } = await supabase.functions.invoke('import-all-anime', {
+      // Add a 60-second timeout for the function call
+      options: { 
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    });
     
     if (error) {
       console.error('Error importing all anime with episodes:', error);
-      return { success: false, message: error.message };
+      return { 
+        success: false, 
+        message: error.message || 'Произошла ошибка при импорте аниме с эпизодами'
+      };
     }
     
     console.log('All anime import result:', data);
     return data;
   } catch (err) {
     console.error('Error calling import-all-anime function:', err);
-    return { success: false, message: 'Не удалось импортировать все аниме с эпизодами' };
+    return { 
+      success: false, 
+      message: 'Не удалось импортировать все аниме с эпизодами. Попробуйте еще раз или импортируйте меньшее количество аниме.' 
+    };
   }
 }

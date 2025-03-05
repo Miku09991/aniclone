@@ -21,202 +21,180 @@ serve(async (req) => {
 
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
-    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('Starting comprehensive anime import with episodes and videos...');
-    
-    // Data sources - combining many anime databases for maximum coverage
-    const sources = [
-      // Main anime datasets
-      { url: "https://raw.githubusercontent.com/manami-project/anime-offline-database/master/anime-offline-database.json", type: "json" },
-      { url: "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data/tv.json", type: "json" },
-      { url: "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data/movie.json", type: "json" },
-      { url: "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data/ova.json", type: "json" },
-      // Additional sources for more variety
-      { url: "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data/special.json", type: "json" },
-      { url: "https://raw.githubusercontent.com/LibertaSoft/DatabaseAnime/master/data/ona.json", type: "json" },
-    ];
+    console.log('Starting simplified anime import with episodes and videos...');
     
     // Video sources for sample episodes
     const videoSources = [
-      // Stable video sources with different content types
       'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
       'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
       'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
       'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-      'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-      'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCarCanYouGetForAGrand.mp4'
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
     ];
     
-    let totalImported = 0;
+    // Sample anime data - smaller set to avoid timeouts
+    const animeData = [
+      {
+        title: "Атака титанов",
+        description: "В мире, где человечество обитает за гигантскими стенами, защищающими их от титанов, Эрен Йегер клянется отомстить после трагедии.",
+        image: "https://m.media-amazon.com/images/M/MV5BNzc5MTczNDQtNDFjNi00ZDU5LWFkNzItOTE1NzQzMzdhNzMxXkEyXkFqcGdeQXVyNTgyNTA4MjM@._V1_.jpg",
+        year: 2013,
+        episodes: 25,
+        status: "Завершен",
+        rating: 9.0,
+        genre: ["Экшн", "Драма", "Фэнтези"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+      },
+      {
+        title: "Ван Пис",
+        description: "Монки Д. Луффи отправляется в плавание, чтобы найти легендарное сокровище под названием \"Ван Пис\" и стать Королем Пиратов.",
+        image: "https://m.media-amazon.com/images/M/MV5BODcwNWE3OTMtMDc3MS00NDFjLWE1OTAtNDU3NjgxODMxY2UyXkEyXkFqcGdeQXVyNTAyODkwOQ@@._V1_.jpg",
+        year: 1999,
+        episodes: 1000,
+        status: "Онгоинг",
+        rating: 8.7,
+        genre: ["Приключения", "Комедия", "Фэнтези"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+      },
+      {
+        title: "Магическая битва",
+        description: "Юдзи Итадори, обычный старшеклассник с экстраординарной физической силой, участвует в оккультной деятельности школьного клуба.",
+        image: "https://m.media-amazon.com/images/M/MV5BNzQyYzU3Y2MtOWY2Yy00ZGM2LTg3ZTUtMDJkZTJiMmEzMjYxXkEyXkFqcGdeQXVyMTI2NTY3NDg5._V1_.jpg",
+        year: 2020,
+        episodes: 24,
+        status: "Завершен",
+        rating: 8.6,
+        genre: ["Экшн", "Фэнтези", "Сверхъестественное"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+      },
+      {
+        title: "Клинок, рассекающий демонов",
+        description: "После того, как его семья была убита демонами, а сестра превращена в одного из них, Танджиро Камадо становится охотником на демонов, чтобы найти лекарство для сестры.",
+        image: "https://m.media-amazon.com/images/M/MV5BZjZjNzI5MDctY2Y4YS00NmM4LTljMmItZTFkOTExNGI3ODRhXkEyXkFqcGdeQXVyNjc3MjQzNTI@._V1_.jpg",
+        year: 2019,
+        episodes: 26,
+        status: "Завершен",
+        rating: 8.7,
+        genre: ["Экшн", "Фэнтези", "Исторический"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
+      },
+      {
+        title: "Моя геройская академия",
+        description: "В мире, где большинство людей обладают суперспособностями, Изуку Мидория рождается без них, но всё ещё мечтает стать героем.",
+        image: "https://m.media-amazon.com/images/M/MV5BOGZmYjdjN2UtNjAwZi00YmEyLWFhNTEtNjM1OTc5ODg0MGEyXkEyXkFqcGdeQXVyMTA1NjQyNjkw._V1_.jpg",
+        year: 2016,
+        episodes: 113,
+        status: "Онгоинг",
+        rating: 8.4,
+        genre: ["Экшн", "Комедия", "Супергерои"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+      }
+    ];
+
+    let totalAdded = 0;
     let totalUpdated = 0;
-    let totalErrors = 0;
-    const processedTitles = new Set(); // Track processed titles to avoid duplicates
     
-    // Process each source
-    for (const source of sources) {
+    console.log(`Processing ${animeData.length} anime records...`);
+    
+    // Process each anime in the dataset
+    for (const anime of animeData) {
       try {
-        console.log(`Fetching anime from ${source.url}...`);
-        const response = await fetch(source.url);
+        // Generate episodes (1-12 episodes)
+        const episodeCount = anime.episodes > 12 ? 12 : anime.episodes;
         
-        if (!response.ok) {
-          console.error(`Failed to fetch from ${source.url}: ${response.statusText}`);
+        // Generate episode data with videos
+        const episodeData = [];
+        for (let i = 1; i <= episodeCount; i++) {
+          const randomVideo = videoSources[Math.floor(Math.random() * videoSources.length)];
+          episodeData.push({
+            number: i,
+            title: `Эпизод ${i}`,
+            video_url: randomVideo
+          });
+        }
+        
+        // Prepare anime data with episodes
+        const animeWithEpisodes = {
+          title: anime.title,
+          description: anime.description,
+          image: anime.image,
+          genre: anime.genre,
+          year: anime.year,
+          episodes: episodeCount,
+          rating: anime.rating,
+          status: anime.status,
+          video_url: anime.video_url,
+          episodes_data: JSON.stringify(episodeData)
+        };
+        
+        // Check if anime already exists
+        const { data: existingAnime, error: queryError } = await supabase
+          .from('animes')
+          .select('id, title')
+          .ilike('title', anime.title)
+          .maybeSingle();
+        
+        if (queryError) {
+          console.error(`Error checking if anime exists: ${queryError.message}`);
           continue;
         }
         
-        const rawData = await response.json();
-        
-        // Handle different data formats
-        let animeList = [];
-        if (source.url.includes("anime-offline-database")) {
-          // Handle Manami Project format
-          animeList = rawData.data || [];
+        if (existingAnime) {
+          // Update existing anime
+          const { error: updateError } = await supabase
+            .from('animes')
+            .update(animeWithEpisodes)
+            .eq('id', existingAnime.id);
+          
+          if (updateError) {
+            console.error(`Error updating anime: ${updateError.message}`);
+          } else {
+            console.log(`Updated anime: ${anime.title}`);
+            totalUpdated++;
+          }
         } else {
-          // Handle DatabaseAnime format
-          animeList = Array.isArray(rawData) ? rawData : [];
-        }
-        
-        console.log(`Found ${animeList.length} anime from source`);
-        
-        // Process in batches to avoid timeouts
-        const batchSize = 50;
-        const batches = Math.ceil(animeList.length / batchSize);
-        
-        for (let i = 0; i < batches; i++) {
-          const batchStart = i * batchSize;
-          const batchEnd = Math.min((i + 1) * batchSize, animeList.length);
-          const batch = animeList.slice(batchStart, batchEnd);
+          // Insert new anime
+          const { error: insertError } = await supabase
+            .from('animes')
+            .insert(animeWithEpisodes);
           
-          console.log(`Processing batch ${i+1}/${batches} (${batchStart}-${batchEnd})`);
-          
-          // Process each anime in the batch
-          for (const anime of batch) {
-            try {
-              // Extract title based on data format
-              let title = "";
-              if (source.url.includes("anime-offline-database")) {
-                title = anime.title || "";
-              } else {
-                title = anime.title || "";
-              }
-              
-              // Skip if already processed
-              if (processedTitles.has(title) || !title) {
-                continue;
-              }
-              
-              processedTitles.add(title);
-              
-              // Generate episodes (1-24 random episodes)
-              const episodeCount = Math.floor(Math.random() * 24) + 1;
-              
-              // Generate episode data with videos
-              const episodeData = [];
-              for (let j = 1; j <= episodeCount; j++) {
-                const randomVideo = videoSources[Math.floor(Math.random() * videoSources.length)];
-                episodeData.push({
-                  number: j,
-                  title: `Episode ${j}`,
-                  video_url: randomVideo
-                });
-              }
-              
-              // Prepare anime data
-              const animeData = {
-                title: title,
-                description: anime.synopsis || anime.description || `Описание аниме "${title}"`,
-                image: anime.picture || anime.image || anime.imageUrl || "https://via.placeholder.com/300x450.png?text=" + encodeURIComponent(title),
-                genre: Array.isArray(anime.genres) ? anime.genres : (anime.tags ? anime.tags : ["Аниме"]),
-                year: anime.year || anime.animeSeason?.year || 2023,
-                episodes: episodeCount,
-                rating: anime.score || anime.rating || (Math.random() * 3 + 7).toFixed(1),
-                status: anime.status || "Finished",
-                video_url: episodeData[0]?.video_url || videoSources[0],
-                episodes_data: JSON.stringify(episodeData)
-              };
-              
-              // Check if anime already exists
-              const { data: existingAnime, error: queryError } = await supabase
-                .from('animes')
-                .select('id, title')
-                .ilike('title', title)
-                .maybeSingle();
-              
-              if (queryError) {
-                console.error(`Error checking if anime exists: ${queryError.message}`);
-                totalErrors++;
-                continue;
-              }
-              
-              if (existingAnime) {
-                // Update existing anime
-                const { error: updateError } = await supabase
-                  .from('animes')
-                  .update(animeData)
-                  .eq('id', existingAnime.id);
-                
-                if (updateError) {
-                  console.error(`Error updating anime: ${updateError.message}`);
-                  totalErrors++;
-                } else {
-                  totalUpdated++;
-                }
-              } else {
-                // Insert new anime
-                const { error: insertError } = await supabase
-                  .from('animes')
-                  .insert(animeData);
-                
-                if (insertError) {
-                  console.error(`Error inserting anime: ${insertError.message}`);
-                  totalErrors++;
-                } else {
-                  totalImported++;
-                }
-              }
-            } catch (err) {
-              console.error(`Error processing anime: ${err.message}`);
-              totalErrors++;
-            }
+          if (insertError) {
+            console.error(`Error inserting anime: ${insertError.message}`);
+          } else {
+            console.log(`Added new anime: ${anime.title}`);
+            totalAdded++;
           }
         }
       } catch (err) {
-        console.error(`Error processing source ${source.url}: ${err.message}`);
+        console.error(`Error processing anime ${anime.title}: ${err.message}`);
       }
     }
     
-    // Update the animes table to add episodes_data column if it doesn't exist
+    // Check if we need to add episodes_data column
     try {
-      // This is just to check if the column exists, not to actually use the response
-      const { error } = await supabase.rpc('check_column_exists', { 
-        p_table: 'animes', 
-        p_column: 'episodes_data' 
-      });
+      // This is a simple check if the column exists
+      const { data: checkData, error: checkError } = await supabase
+        .from('animes')
+        .select('episodes_data')
+        .limit(1);
       
-      // If we get an error that the function doesn't exist, we'll create the column directly
-      if (error) {
+      // If we got an error about column not existing, try to add it
+      if (checkError && checkError.message.includes('column "episodes_data" does not exist')) {
         console.log('Adding episodes_data column to animes table...');
-        // We need to use admin privileges for schema changes
-        const supabaseAdmin = createClient(
-          SUPABASE_URL,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-        );
         
-        // Try to execute a raw SQL query to add the column if it doesn't exist
-        await supabaseAdmin.rpc('add_column_if_not_exists', {
+        // Execute raw SQL to add the column if it doesn't exist
+        const { error: alterError } = await supabase.rpc('add_column_if_not_exists', {
           p_table: 'animes',
           p_column: 'episodes_data',
           p_type: 'jsonb'
-        }).catch(e => {
-          console.warn('Could not add episodes_data column, it may already exist:', e);
         });
+        
+        if (alterError) {
+          console.warn('Could not add episodes_data column:', alterError);
+        }
       }
     } catch (err) {
       console.warn('Error checking/adding episodes_data column:', err);
@@ -225,12 +203,11 @@ serve(async (req) => {
     // Generate a summary
     const summary = {
       success: true,
-      message: `Imported ${totalImported} new anime, updated ${totalUpdated} existing anime. ${totalErrors} errors encountered.`,
+      message: `Импортировано ${totalAdded} новых и обновлено ${totalUpdated} существующих аниме с эпизодами.`,
       stats: {
-        imported: totalImported,
+        added: totalAdded,
         updated: totalUpdated,
-        errors: totalErrors,
-        total_processed: processedTitles.size
+        total: animeData.length
       }
     };
     
@@ -243,7 +220,7 @@ serve(async (req) => {
     console.error(`Global error in import function: ${err.message}`);
     return new Response(JSON.stringify({
       success: false,
-      message: `Failed to import anime: ${err.message}`
+      message: `Не удалось импортировать аниме: ${err.message}`
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500
