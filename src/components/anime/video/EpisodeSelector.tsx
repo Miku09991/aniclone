@@ -28,7 +28,7 @@ const EpisodeSelector = ({
       
       {showEpisodeSelector && <div className="bg-gray-800 rounded-md mt-2 p-2 max-h-64 overflow-y-auto">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {episodes.map(episode => <Button key={episode.number} variant={currentEpisode?.number === episode.number ? "default" : "outline"} size="sm" className="justify-start" onClick={() => changeEpisode(episode)}>
+            {episodes.map(episode => <Button key={episode.number} variant={currentEpisode?.number === episode.number ? "default" : "outline"} size="sm" onClick={() => changeEpisode(episode)} className="justify-start text-zinc-950">
                 Эпизод {episode.number}
               </Button>)}
           </div>
