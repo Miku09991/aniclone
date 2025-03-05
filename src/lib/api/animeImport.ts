@@ -152,3 +152,37 @@ export async function importAllAnimeWithEpisodes() {
     };
   }
 }
+
+/**
+ * Import anime with episodes and data from multiple sources (in batches)
+ * @param limit Number of anime to import per batch
+ * @param offset Offset to start from
+ */
+export async function importAnimeWithEpisodesFromSources(limit = 50, offset = 0) {
+  try {
+    console.log(`Calling import-anime-full function with limit=${limit}, offset=${offset}...`);
+    const { data, error } = await supabase.functions.invoke('import-anime-full', {
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      params: { limit, offset }
+    });
+    
+    if (error) {
+      console.error('Error importing anime with episodes:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Произошла ошибка при импорте аниме с эпизодами'
+      };
+    }
+    
+    console.log('Anime import result:', data);
+    return data;
+  } catch (err) {
+    console.error('Error calling import-anime-full function:', err);
+    return { 
+      success: false, 
+      message: 'Не удалось импортировать аниме с эпизодами. Попробуйте еще раз с другими параметрами.' 
+    };
+  }
+}
