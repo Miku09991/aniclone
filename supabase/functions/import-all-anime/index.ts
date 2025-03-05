@@ -24,7 +24,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    console.log('Starting simplified anime import with episodes and videos...');
+    console.log('Starting anime import with episodes and videos...');
     
     // Video sources for sample episodes
     const videoSources = [
@@ -32,10 +32,13 @@ serve(async (req) => {
       'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
       'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
       'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-      'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4'
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4'
     ];
     
-    // Sample anime data - smaller set to avoid timeouts
+    // Expanded anime data with more titles
     const animeData = [
       {
         title: "Атака титанов",
@@ -91,6 +94,61 @@ serve(async (req) => {
         rating: 8.4,
         genre: ["Экшн", "Комедия", "Супергерои"],
         video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+      },
+      {
+        title: "Наруто",
+        description: "Наруто Узумаки, молодой ниндзя с запечатанным в нем могущественным демоном-лисом, стремится стать Хокаге своей деревни.",
+        image: "https://m.media-amazon.com/images/M/MV5BZmQ5NGFiNWEtMmMyMC00MDdiLTg4YjktOGY5Yzc2MDUxMTE1XkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_.jpg",
+        year: 2002,
+        episodes: 220,
+        status: "Завершен",
+        rating: 8.3,
+        genre: ["Экшн", "Приключения", "Комедия"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4"
+      },
+      {
+        title: "Токийский гуль",
+        description: "Кен Канеки, студент колледжа, который после встречи с гулем превращается в наполовину гуля и вынужден питаться человеческой плотью, чтобы выжить.",
+        image: "https://m.media-amazon.com/images/M/MV5BNTFkNmU4Y2YtMzhmMS00ZjI1LWJlMmYtZTFkMDk5NWNlN2ZmXkEyXkFqcGdeQXVyMzgxODM4NjM@._V1_.jpg",
+        year: 2014,
+        episodes: 12,
+        status: "Завершен",
+        rating: 7.9,
+        genre: ["Экшн", "Драма", "Ужасы"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4"
+      },
+      {
+        title: "Стальной Алхимик: Братство",
+        description: "Два брата, Эдвард и Альфонс Элрики, ищут Философский Камень, чтобы восстановить свои тела после неудачной попытки воскресить свою мать.",
+        image: "https://m.media-amazon.com/images/M/MV5BZmEzN2YzOTItMDI5MS00MGU4LWI1NWQtOTg5ZThhNGQwYTEzXkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_.jpg",
+        year: 2009,
+        episodes: 64,
+        status: "Завершен",
+        rating: 9.1,
+        genre: ["Экшн", "Приключения", "Драма"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4"
+      },
+      {
+        title: "Твоё имя",
+        description: "Двое незнакомцев обнаруживают, что они связаны странным образом и ищут друг друга.",
+        image: "https://m.media-amazon.com/images/M/MV5BNGYyNmI3M2YtNzYzZS00OTViLTkxYjAtZDIyZmE1Y2U1ZmQ2XkEyXkFqcGdeQXVyMTA4NjE0NjEy._V1_.jpg",
+        year: 2016,
+        episodes: 1,
+        status: "Фильм",
+        rating: 8.8,
+        genre: ["Романтика", "Драма", "Фэнтези"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+      },
+      {
+        title: "Евангелион",
+        description: "В постапокалиптическом мире подростки пилотируют гигантских биомеханических роботов, чтобы сражаться с таинственными врагами, известными как Ангелы.",
+        image: "https://m.media-amazon.com/images/M/MV5BYjY1Y2ZmNDctZWQ3Yy00MzVlLWE4NjYtZmVjYTI0MGUxZDQ4XkEyXkFqcGdeQXVyNTA4NzY1MzY@._V1_.jpg",
+        year: 1995,
+        episodes: 26,
+        status: "Завершен",
+        rating: 8.5,
+        genre: ["Экшн", "Драма", "Меха"],
+        video_url: "https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
       }
     ];
 

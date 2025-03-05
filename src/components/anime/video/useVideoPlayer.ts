@@ -18,13 +18,23 @@ export const useVideoPlayer = (videoUrl: string) => {
 
   // Update video source if prop changes
   useEffect(() => {
-    setVideoSource(videoUrl);
-  }, [videoUrl]);
+    if (videoUrl !== videoSource) {
+      setVideoSource(videoUrl);
+      // Reset player state when source changes
+      setIsPlaying(false);
+      setProgress(0);
+      setCurrentTime(0);
+      if (videoRef.current) {
+        videoRef.current.load();
+      }
+    }
+  }, [videoUrl, videoSource]);
 
   // Load metadata handler
   const handleLoadedMetadata = () => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      console.log(`Video duration loaded: ${videoRef.current.duration}s`);
     }
   };
 
@@ -43,8 +53,15 @@ export const useVideoPlayer = (videoUrl: string) => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        console.log('Video paused');
       } else {
-        videoRef.current.play();
+        videoRef.current.play()
+          .then(() => {
+            console.log('Video playing');
+          })
+          .catch(err => {
+            console.error('Error playing video:', err);
+          });
       }
       setIsPlaying(!isPlaying);
     }
@@ -55,6 +72,7 @@ export const useVideoPlayer = (videoUrl: string) => {
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
       setIsMuted(!isMuted);
+      console.log(`Video ${!isMuted ? 'muted' : 'unmuted'}`);
     }
   };
 
@@ -65,6 +83,7 @@ export const useVideoPlayer = (videoUrl: string) => {
       videoRef.current.volume = value;
       setVolume(value);
       setIsMuted(value === 0);
+      console.log(`Volume changed to: ${value}`);
     }
   };
 
@@ -76,6 +95,7 @@ export const useVideoPlayer = (videoUrl: string) => {
       videoRef.current.currentTime = newTime;
       setProgress(value);
       setCurrentTime(newTime);
+      console.log(`Seeking to: ${newTime}s`);
     }
   };
 
@@ -103,6 +123,7 @@ export const useVideoPlayer = (videoUrl: string) => {
   const skipForward = () => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.min(videoRef.current.currentTime + 10, duration);
+      console.log('Skipped forward 10s');
     }
   };
 
@@ -110,6 +131,7 @@ export const useVideoPlayer = (videoUrl: string) => {
   const skipBackward = () => {
     if (videoRef.current) {
       videoRef.current.currentTime = Math.max(videoRef.current.currentTime - 10, 0);
+      console.log('Skipped backward 10s');
     }
   };
 
@@ -154,6 +176,21 @@ export const useVideoPlayer = (videoUrl: string) => {
       document.removeEventListener('fullscreenchange', () => {});
     };
   }, [isPlaying, isControlsVisible]);
+
+  // Handle video errors
+  useEffect(() => {
+    const handleVideoError = (e: Event) => {
+      console.error('Video error:', (e.target as HTMLVideoElement).error);
+    };
+
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener('error', handleVideoError);
+      return () => {
+        video.removeEventListener('error', handleVideoError);
+      };
+    }
+  }, [videoRef.current]);
 
   return {
     videoRef,
