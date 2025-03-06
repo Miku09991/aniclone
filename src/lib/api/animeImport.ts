@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -184,6 +183,43 @@ export async function importAnimeWithEpisodesFromSources(limit = 50, offset = 0)
     return { 
       success: false, 
       message: 'Не удалось импортировать аниме с эпизодами. Попробуйте еще раз с другими параметрами.' 
+    };
+  }
+}
+
+/**
+ * Imports anime with episodes and data from AniLibria
+ */
+export async function importAnimeFromAnilibria() {
+  try {
+    console.log('Calling import-anilibria function...');
+    const { data: session } = await supabase.auth.getSession();
+    
+    if (!session.session) {
+      return { success: false, message: 'Требуется авторизация' };
+    }
+
+    const { data, error } = await supabase.functions.invoke('import-anilibria', {
+      headers: {
+        Authorization: `Bearer ${session.session.access_token}`
+      }
+    });
+    
+    if (error) {
+      console.error('Error importing anime from AniLibria:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Произошла ошибка при импорте аниме из AniLibria'
+      };
+    }
+    
+    console.log('AniLibria import result:', data);
+    return data;
+  } catch (err) {
+    console.error('Error calling import-anilibria function:', err);
+    return { 
+      success: false, 
+      message: 'Не удалось импортировать аниме из AniLibria. Попробуйте еще раз.' 
     };
   }
 }

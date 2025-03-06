@@ -79,51 +79,78 @@ serve(async (req) => {
     // Process and insert data into database
     const titles = anilibriaData.list as AnilibriaTitle[];
     const processedAnimes = titles.map(title => {
-      // Extract episode count from player.series if available
-      const episodeCount = title.player?.series ? Object.keys(title.player.series).length : 0;
+      // Extract episode data from player.series if available
+      const episodesData = [];
       
-      // Build video URL if available
-      let videoUrl = null;
-      if (title.player?.series && title.player.host && Object.keys(title.player.series).length > 0) {
-        const firstEpisodeKey = Object.keys(title.player.series)[0];
-        const episode = title.player.series[firstEpisodeKey];
-        if (episode && episode.hls && Object.values(episode.hls).length > 0) {
-          // Get the first available quality
-          const firstQualityKey = Object.keys(episode.hls)[0];
-          const videoPath = episode.hls[firstQualityKey];
-          videoUrl = `https://${title.player.host}${videoPath}`;
+      if (title.player?.series && Object.keys(title.player.series).length > 0) {
+        for (const [episodeNumber, episodeData] of Object.entries(title.player.series)) {
+          // Find best quality or use first available
+          let videoUrl = null;
+          if (episodeData && episodeData.hls && Object.values(episodeData.hls).length > 0) {
+            // Try to get HD quality if available
+            const quality = episodeData.hls["hd"] || episodeData.hls["sd"] || Object.values(episodeData.hls)[0];
+            videoUrl = `https://${title.player.host}${quality}`;
+          }
+          
+          if (videoUrl) {
+            episodesData.push({
+              number: parseInt(episodeNumber),
+              title: `Эпизод ${episodeNumber}`,
+              video_url: videoUrl
+            });
+          }
         }
+      }
+      
+      // Sort episodes by number
+      episodesData.sort((a, b) => a.number - b.number);
+      
+      // Build main video URL from first episode if available
+      let videoUrl = null;
+      if (episodesData.length > 0) {
+        videoUrl = episodesData[0].video_url;
       }
 
       return {
         id: title.id,
         title: title.names.ru || title.names.en || title.code,
         description: title.description,
-        episodes: episodeCount,
+        episodes: episodesData.length || 0,
         year: title.season?.year || null,
         genre: title.genres || [],
         rating: title.in_favorites / 100, // Using favorites count as a proxy for rating
         status: title.status?.code || null,
         image: title.posters?.original?.url ? `https://anilibria.tv${title.posters.original.url}` : null,
         video_url: videoUrl,
+        episodes_data: episodesData
       };
     });
 
     // Insert data into supabase
     console.log(`Inserting ${processedAnimes.length} titles into database...`);
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('animes')
-      .upsert(processedAnimes, { onConflict: 'id' });
+      .upsert(processedAnimes, { 
+        onConflict: 'id',
+        ignoreDuplicates: false
+      });
 
     if (error) {
-      throw new Error(`Database error: ${error.message}`);
+      console.error('Database error:', error);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: `Database error: ${error.message}`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log("Import completed successfully");
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully imported ${processedAnimes.length} animes from AniLibria`,
+        message: `Successfully imported ${processedAnimes.length} animes from AniLibria with episode data`,
         count: processedAnimes.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
