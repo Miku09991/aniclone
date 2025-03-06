@@ -62,7 +62,7 @@ const Favorites = () => {
             <Heart size={64} className="text-gray-400 mb-4" />
             <p className="text-gray-400">У вас пока нет избранного аниме</p>
             <Button variant="outline" className="mt-4" asChild>
-              <Link to="/" className="\u0442\u0435\u043A\u0441\u0442 \u0447\u0435\u0440\u043D\u043E\u0433\u043E \u0446\u0432\u0435\u0442\u0430">
+              <Link to="/" className="">
                 Перейти к аниме
               </Link>
             </Button>
