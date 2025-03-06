@@ -1,12 +1,9 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-
 const Footer = () => {
-  return (
-    <footer className="bg-[#121212] border-t border-[#2a2a2a] py-8 mt-12">
+  return <footer className="bg-[#121212] border-t border-[#2a2a2a] py-8 mt-12">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
@@ -71,11 +68,7 @@ const Footer = () => {
               Подпишитесь на нашу рассылку, чтобы получать уведомления о новых релизах
             </p>
             <div className="flex">
-              <Input 
-                type="email" 
-                placeholder="Ваш Email" 
-                className="bg-[#2a2a2a] border-[#3a3a3a] text-white rounded-r-none focus-visible:ring-red-500"
-              />
+              <Input type="email" placeholder="Ваш Email" className="bg-[#2a2a2a] border-[#3a3a3a] text-white rounded-r-none focus-visible:ring-red-500" />
               <Button className="bg-red-500 hover:bg-red-600 rounded-l-none">
                 Подписаться
               </Button>
@@ -84,11 +77,9 @@ const Footer = () => {
         </div>
         <Separator className="my-6 bg-[#2a2a2a]" />
         <div className="text-center text-gray-400 text-sm">
-          <p>© 2023 AniClone. Все права защищены.</p>
+          <p>© 2025 AniClone. Все права защищены.</p>
         </div>
       </div>
-    </footer>
-  );
+    </footer>;
 };
-
 export default Footer;
