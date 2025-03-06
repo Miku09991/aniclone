@@ -27,3 +27,6 @@ verify_jwt = false
 
 [functions.import-all-anime]
 verify_jwt = false
+
+[functions.import-anime-full]
+verify_jwt = false

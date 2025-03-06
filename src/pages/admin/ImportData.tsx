@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,8 @@ import {
   autoSyncAnimeWithVideos, 
   importAnimeWithVideos,
   importAllAnimeWithEpisodes,
-  importAnimeWithEpisodesFromSources
+  importAnimeWithEpisodesFromSources,
+  importAnimeFromAnilibria
 } from "@/lib/api/animeImport";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +25,6 @@ const ImportData = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  // Check authentication
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -216,7 +215,6 @@ const ImportData = () => {
           description: result.message,
         });
         
-        // Update offset for next batch
         if (result.nextOffset) {
           setImportOffset(result.nextOffset.toString());
         }
@@ -237,6 +235,48 @@ const ImportData = () => {
       toast({
         title: "Ошибка",
         description: "Произошла ошибка при импорте аниме из источников",
+        variant: "destructive",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+  
+  const handleImportFromAnilibria = async () => {
+    setImporting(true);
+    setImportResult(null);
+    
+    try {
+      toast({
+        title: "Начат импорт аниме из AniLibria",
+        description: "Импорт аниме из AniLibria может занять некоторое время...",
+      });
+      
+      const result = await importAnimeFromAnilibria();
+      setImportResult(result);
+      
+      if (result.success) {
+        toast({
+          title: "Импорт завершен",
+          description: result.message,
+        });
+      } else {
+        toast({
+          title: "Ошибка",
+          description: result.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error importing anime from AniLibria:", error);
+      setImportResult({
+        success: false,
+        message: "Произошла ошибка при импорте аниме из AniLibria",
+      });
+      
+      toast({
+        title: "Ошибка",
+        description: "Произошла ошибка при импорте аниме из AniLibria",
         variant: "destructive",
       });
     } finally {
@@ -339,55 +379,81 @@ const ImportData = () => {
         </Card>
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <Layers className="h-8 w-8 mb-2 text-amber-500" />
-          <CardTitle>Импорт аниме из внешних источников</CardTitle>
-          <CardDescription>
-            Импорт аниме с эпизодами из JikanAPI (MyAnimeList)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500 mb-4">
-            Импортирует аниме с эпизодами и демо-видео из JikanAPI. Вы можете контролировать количество аниме и отступ для разбивки на порции.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Количество аниме</label>
-              <Input 
-                type="number" 
-                value={importLimit} 
-                onChange={(e) => setImportLimit(e.target.value)}
-                min="1"
-                max="100"
-                placeholder="50"
-              />
-              <p className="text-xs text-gray-500 mt-1">Рекомендуется: 20-50</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card className="mb-6">
+          <CardHeader>
+            <Layers className="h-8 w-8 mb-2 text-amber-500" />
+            <CardTitle>Импорт аниме из MyAnimeList</CardTitle>
+            <CardDescription>
+              Импорт аниме с эпизодами из JikanAPI (MyAnimeList)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-500 mb-4">
+              Импортирует аниме с эпизодами и демо-видео из JikanAPI. Вы можете контролировать количество аниме и отступ для разбивки на порции.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">Количество аниме</label>
+                <Input 
+                  type="number" 
+                  value={importLimit} 
+                  onChange={(e) => setImportLimit(e.target.value)}
+                  min="1"
+                  max="100"
+                  placeholder="50"
+                />
+                <p className="text-xs text-gray-500 mt-1">Рекомендуется: 20-50</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">Отступ</label>
+                <Input 
+                  type="number" 
+                  value={importOffset} 
+                  onChange={(e) => setImportOffset(e.target.value)}
+                  min="0"
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500 mt-1">Используйте для загрузки страницами</p>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Отступ</label>
-              <Input 
-                type="number" 
-                value={importOffset} 
-                onChange={(e) => setImportOffset(e.target.value)}
-                min="0"
-                placeholder="0"
-              />
-              <p className="text-xs text-gray-500 mt-1">Используйте для загрузки страницами</p>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            onClick={handleImportAnimeFromSources}
-            disabled={importing}
-            className="w-full bg-amber-600 hover:bg-amber-700"
-          >
-            {importing ? "Импорт..." : "Импортировать аниме с эпизодами"}
-          </Button>
-        </CardFooter>
-      </Card>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              onClick={handleImportAnimeFromSources}
+              disabled={importing}
+              className="w-full bg-amber-600 hover:bg-amber-700"
+            >
+              {importing ? "Импорт..." : "Импортировать из MyAnimeList"}
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <Download className="h-8 w-8 mb-2 text-purple-500" />
+            <CardTitle>Импорт из AniLibria</CardTitle>
+            <CardDescription>
+              Импорт аниме с эпизодами из AniLibria API
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-500 mb-4">
+              Импортирует аниме с видео и эпизодами из AniLibria. Включает русские названия и описания аниме, а также ссылки на видео.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              onClick={handleImportFromAnilibria}
+              disabled={importing}
+              className="w-full bg-purple-600 hover:bg-purple-700"
+            >
+              {importing ? "Импорт..." : "Импортировать из AniLibria"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
 
       <Card className="col-span-1 md:col-span-2 lg:col-span-3">
         <CardHeader>
