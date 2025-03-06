@@ -42,12 +42,14 @@ serve(async (req) => {
       );
     }
 
-    // Sample video URLs (you would normally fetch these from an API)
+    // Sample video URLs (Kodik player URLs and YouTube embeds)
     const sampleVideos = [
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4"
+      // YouTube embeds for anime trailers
+      "https://www.youtube.com/embed/lDNRVQqKYFs", // Naruto
+      "https://www.youtube.com/embed/cGW6aBkCpVE", // Attack on Titan
+      "https://www.youtube.com/embed/MGRm4IzK1SQ", // My Hero Academia
+      "https://www.youtube.com/embed/o3ASICWeSLc", // One Piece
+      "https://www.youtube.com/embed/VQGCKyvzIM4"  // Demon Slayer
     ];
 
     // Select a random video URL

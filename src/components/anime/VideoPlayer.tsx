@@ -1,3 +1,3 @@
 
-import VideoPlayer from "./video/VideoPlayer";
-export default VideoPlayer;
+import KodikPlayer from "./video/KodikPlayer";
+export default KodikPlayer;

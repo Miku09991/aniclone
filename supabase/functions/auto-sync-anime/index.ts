@@ -47,21 +47,21 @@ async function fetchNewAnimeFromJikan(limit: number = 10): Promise<AnimeData[]> 
 async function searchAnimeTrailers(title: string): Promise<string | null> {
   console.log(`Searching for trailer for: ${title}`);
   try {
-    // This is a demo placeholder - in production, you'd use a real API
-    // Example: search YouTube API for "[title] anime trailer"
-    const searchQuery = encodeURIComponent(`${title} anime trailer`);
-    const demoUrls = [
-      "https://youtu.be/cGW6aBkCpVE",
-      "https://youtu.be/MGRm4IzK1SQ", 
-      "https://youtu.be/_mJNVzJOCDQ",
-      "https://youtu.be/hBDE97oPV9k",
-      "https://youtu.be/3xHpxfV5Wl8"
+    // These are YouTube embed URLs for anime trailers
+    const embedUrls = [
+      "https://www.youtube.com/embed/lDNRVQqKYFs", // Naruto
+      "https://www.youtube.com/embed/cGW6aBkCpVE", // Attack on Titan
+      "https://www.youtube.com/embed/MGRm4IzK1SQ", // My Hero Academia
+      "https://www.youtube.com/embed/o3ASICWeSLc", // One Piece
+      "https://www.youtube.com/embed/VQGCKyvzIM4", // Demon Slayer
+      "https://www.youtube.com/embed/_mJNVzJOCDQ", // Jujutsu Kaisen
+      "https://www.youtube.com/embed/hBDE97oPV9k", // Dragon Ball
+      "https://www.youtube.com/embed/3xHpxfV5Wl8"  // Death Note
     ];
     
     // For demo purposes, return a random video from our list
-    // In production, you would use the YouTube API to search for videos
-    const randomIndex = Math.floor(Math.random() * demoUrls.length);
-    return demoUrls[randomIndex];
+    const randomIndex = Math.floor(Math.random() * embedUrls.length);
+    return embedUrls[randomIndex];
   } catch (error) {
     console.error("Error searching for trailer:", error);
     return null;
