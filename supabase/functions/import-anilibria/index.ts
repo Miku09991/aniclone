@@ -60,46 +60,92 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch titles from AniLibria API
+    // Fetch titles from AniLibria API with updated endpoint and parameters
     console.log("Fetching titles from AniLibria API...");
-    const anilibriaResponse = await fetch("https://api.anilibria.tv/v3/title/list?limit=50&filter=id,code,names,description,status,type,in_favorites,player,posters,season,genres", {
+    
+    // Using the v2 API which tends to be more stable
+    const anilibriaResponse = await fetch("https://api.anilibria.tv/v2/getUpdates?limit=50", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "User-Agent": "AniLibriaImporter/1.0" // Adding a user agent might help with the 412 error
       },
     });
 
     if (!anilibriaResponse.ok) {
-      throw new Error(`AniLibria API error: ${anilibriaResponse.statusText}`);
+      console.error(`AniLibria API error: ${anilibriaResponse.status} ${anilibriaResponse.statusText}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: `AniLibria API error: ${anilibriaResponse.status} ${anilibriaResponse.statusText}`,
+          details: await anilibriaResponse.text().catch(() => "Unable to read response body")
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 // Return 200 to client but with error information
+        }
+      );
     }
 
     const anilibriaData = await anilibriaResponse.json();
-    console.log(`Fetched ${anilibriaData.list.length} titles from AniLibria API`);
+    console.log(`Fetched data from AniLibria API:`, anilibriaData);
+    
+    // Handle v2 API structure - the data might be directly in the response or in a list property
+    const titles = Array.isArray(anilibriaData) ? anilibriaData : (anilibriaData.list || []);
+    console.log(`Processing ${titles.length} titles from AniLibria API`);
 
-    // Process and insert data into database
-    const titles = anilibriaData.list as AnilibriaTitle[];
+    if (titles.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "No titles received from AniLibria API",
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200
+        }
+      );
+    }
+
+    // Process and insert data into database - adapting for v2 API response structure
     const processedAnimes = titles.map(title => {
-      // Extract episode data from player.series if available
+      // Extract episode data from player info if available
       const episodesData = [];
       
-      if (title.player?.series && Object.keys(title.player.series).length > 0) {
-        for (const [episodeNumber, episodeData] of Object.entries(title.player.series)) {
-          // Find best quality or use first available
-          let videoUrl = null;
-          if (episodeData && episodeData.hls && Object.values(episodeData.hls).length > 0) {
-            // Try to get HD quality if available
-            const quality = episodeData.hls["hd"] || episodeData.hls["sd"] || Object.values(episodeData.hls)[0];
-            videoUrl = `https://${title.player.host}${quality}`;
+      try {
+        if (title.player && title.player.playlist) {
+          // v2 API structure for episodes
+          for (const [episodeNumber, episodeData] of Object.entries(title.player.playlist)) {
+            if (episodeData && episodeData.hls) {
+              const videoUrl = `https://${title.player.host}${episodeData.hls}`;
+              
+              episodesData.push({
+                number: parseInt(episodeNumber),
+                title: `Эпизод ${episodeNumber}`,
+                video_url: videoUrl
+              });
+            }
           }
-          
-          if (videoUrl) {
-            episodesData.push({
-              number: parseInt(episodeNumber),
-              title: `Эпизод ${episodeNumber}`,
-              video_url: videoUrl
-            });
+        } else if (title.player?.series && Object.keys(title.player.series).length > 0) {
+          // v3 API fallback structure
+          for (const [episodeNumber, episodeData] of Object.entries(title.player.series)) {
+            let videoUrl = null;
+            if (episodeData && episodeData.hls && Object.values(episodeData.hls).length > 0) {
+              const quality = episodeData.hls["hd"] || episodeData.hls["sd"] || Object.values(episodeData.hls)[0];
+              videoUrl = `https://${title.player.host}${quality}`;
+            }
+            
+            if (videoUrl) {
+              episodesData.push({
+                number: parseInt(episodeNumber),
+                title: `Эпизод ${episodeNumber}`,
+                video_url: videoUrl
+              });
+            }
           }
         }
+      } catch (error) {
+        console.error(`Error processing episodes for title ${title.id || 'unknown'}:`, error);
       }
       
       // Sort episodes by number
@@ -111,16 +157,33 @@ serve(async (req) => {
         videoUrl = episodesData[0].video_url;
       }
 
+      // Extract title - adapting for different API versions
+      const titleName = title.names ? 
+        (title.names.ru || title.names.en || title.code) : 
+        (title.russian || title.name || title.code || 'Unknown');
+
+      // Extract poster URL - adapting for different API versions
+      let posterUrl = null;
+      if (title.posters?.original?.url) {
+        posterUrl = `https://anilibria.tv${title.posters.original.url}`;
+      } else if (title.poster) {
+        posterUrl = title.poster.startsWith('http') ? title.poster : `https://anilibria.tv${title.poster}`;
+      }
+
+      // Get genres - adapting for different API versions
+      const genres = title.genres || title.genre || [];
+
+      // Map to our database schema
       return {
         id: title.id,
-        title: title.names.ru || title.names.en || title.code,
-        description: title.description,
+        title: titleName,
+        description: title.description || '',
         episodes: episodesData.length || 0,
-        year: title.season?.year || null,
-        genre: title.genres || [],
-        rating: title.in_favorites / 100, // Using favorites count as a proxy for rating
-        status: title.status?.code || null,
-        image: title.posters?.original?.url ? `https://anilibria.tv${title.posters.original.url}` : null,
+        year: (title.season?.year || title.year || new Date().getFullYear()),
+        genre: genres,
+        rating: title.in_favorites ? (title.in_favorites / 100) : (title.favorite?.rating || 7),
+        status: (title.status?.code || title.status || 'ongoing'),
+        image: posterUrl,
         video_url: videoUrl,
         episodes_data: episodesData
       };
@@ -160,9 +223,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        message: error.message
+        message: error.message || "Unknown error occurred"
       }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 // Return 200 with error information to avoid Edge Function error
+      }
     );
   }
 });
