@@ -173,6 +173,20 @@ serve(async (req) => {
       // Get genres - adapting for different API versions
       const genres = title.genres || title.genre || [];
 
+      // Fix for the numeric field overflow
+      // Ensure rating is a valid numeric value between 0-10
+      let normalizedRating = null;
+      if (title.in_favorites) {
+        // Normalize the 'in_favorites' to something between 0-10
+        normalizedRating = Math.min(10, Math.max(0, title.in_favorites > 1000 ? 
+          (title.in_favorites > 10000 ? 10 : title.in_favorites / 1000) : 
+          (title.in_favorites / 100)));
+      } else if (title.favorite?.rating) {
+        normalizedRating = Math.min(10, Math.max(0, title.favorite.rating));
+      } else {
+        normalizedRating = 7; // Default rating
+      }
+
       // Map to our database schema
       return {
         id: title.id,
@@ -181,7 +195,7 @@ serve(async (req) => {
         episodes: episodesData.length || 0,
         year: (title.season?.year || title.year || new Date().getFullYear()),
         genre: genres,
-        rating: title.in_favorites ? (title.in_favorites / 100) : (title.favorite?.rating || 7),
+        rating: normalizedRating,
         status: (title.status?.code || title.status || 'ongoing'),
         image: posterUrl,
         video_url: videoUrl,
